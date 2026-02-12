@@ -31,6 +31,8 @@ document.getElementById('playBtn').addEventListener('click', () => {
     console.log('App visible:', !appEl.classList.contains('hidden'));
     currentMode = 'play';
     modeIndicatorEl.textContent = 'PLAYING';
+    // Trigger canvas resize after app is visible
+    window.dispatchEvent(new Event('resize'));
     startGame();
 });
 
