@@ -20,7 +20,7 @@ export class InputHandler {
         switch (e.key) {
             case 'ArrowUp':
                 this.thrusting = true;
-                this.wsClient.sendInput('thrust');
+                this.wsClient.sendInput('thrust_on');
                 e.preventDefault();
                 break;
             case 'ArrowLeft':
