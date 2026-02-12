@@ -273,11 +273,14 @@ async function startGame(difficulty = 'simple') {
         wsClient = new WebSocketClient(wsUrl);
         
         wsClient.onInit = (data) => {
+            console.log('✓ Received init message:', data);
             gameState.terrain = data.terrain;
             gameState.lander = data.lander;
             gameState.thrusting = false;
             gameActive = true;
+            statusEl.classList.remove('visible');
             startGameLoop();
+            isConnecting = false;
         };
         
         wsClient.onTelemetry = (data) => {
