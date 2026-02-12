@@ -326,12 +326,6 @@ function gameLoop(timestamp) {
     try {
         const thrusting = gameState.thrusting || (inputHandler ? inputHandler.isThrusting() : false);
         
-        // Debug: Log first few frames
-        if (frameCount < 3) {
-            console.log(`Frame ${frameCount}: lander=`, gameState.lander, 'terrain=', gameState.terrain);
-            frameCount++;
-        }
-        
         // Only render if state changed (dirty flag optimization)
         const currentState = JSON.stringify({
             lander: gameState.lander,
@@ -363,7 +357,6 @@ function stopGameLoop() {
 
 function startGameLoop() {
     if (!animationFrameId) {
-        console.log('✓ Starting game loop');
         animationFrameId = requestAnimationFrame(gameLoop);
     }
 }
