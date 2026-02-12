@@ -8,6 +8,7 @@ class ReplayRecorder:
         self.user_id = user_id
         self.difficulty = difficulty
         self.frames = []
+        self.frame_counter = 0  # For 30Hz recording
         self.metadata = {
             "session_id": session_id,
             "user_id": user_id,
@@ -21,14 +22,32 @@ class ReplayRecorder:
         self.metadata["terrain"] = terrain_data
         
     def record_frame(self, lander_state, terrain_height, altitude, speed, thrusting):
-        """Record a single frame of game state"""
+        """Record a single frame of game state at 30Hz with quantization"""
+        self.frame_counter += 1
+        
+        # Only record every other frame (30Hz instead of 60Hz)
+        if self.frame_counter % 2 != 0:
+            return
+        
+        # Quantize values to reduce size
+        quantized_lander = {
+            "x": round(lander_state["x"], 1),
+            "y": round(lander_state["y"], 1),
+            "vx": round(lander_state["vx"], 2),
+            "vy": round(lander_state["vy"], 2),
+            "rotation": round(lander_state["rotation"], 2),
+            "fuel": round(lander_state["fuel"]),
+            "crashed": lander_state["crashed"],
+            "landed": lander_state["landed"]
+        }
+        
         self.frames.append({
-            "lander": lander_state,
-            "terrain_height": terrain_height,
-            "altitude": altitude,
-            "speed": speed,
+            "lander": quantized_lander,
+            "terrain_height": round(terrain_height, 1),
+            "altitude": round(altitude),
+            "speed": round(speed, 1),
             "thrusting": thrusting,
-            "timestamp": time.time()
+            "timestamp": round(time.time(), 3)
         })
         
     def finalize(self, landed, crashed, final_time, fuel_remaining, inputs):

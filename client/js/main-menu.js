@@ -143,6 +143,7 @@ async function playReplay(replayId) {
     // Play the replay
     let frameIndex = 0;
     const playbackSpeed = 1.0; // 1x speed
+    const frameDelay = (1000 / 30) / playbackSpeed; // 30Hz playback
     
     function replayLoop() {
         if (frameIndex >= replayData.frames.length) {
@@ -158,7 +159,7 @@ async function playReplay(replayId) {
         gameState.thrusting = frame.thrusting || false;
         
         frameIndex++;
-        setTimeout(() => requestAnimationFrame(replayLoop), (1000 / 60) / playbackSpeed);
+        setTimeout(() => requestAnimationFrame(replayLoop), frameDelay);
     }
     
     replayLoop();
