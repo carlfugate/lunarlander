@@ -1,6 +1,9 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import json
 import uuid
 import time
@@ -13,7 +16,12 @@ except:
     FIREBASE_ENABLED = False
     print("⚠ Firebase not configured - authentication disabled")
 
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -27,13 +35,40 @@ app.add_middleware(
 sessions = {}
 replays = {}  # In-memory replay storage (would use database in production)
 
+# Security limits
+MAX_SESSIONS = 100
+MAX_SPECTATORS_PER_GAME = 100
+MAX_REPLAYS = 500
+SESSION_TIMEOUT = 600  # 10 minutes
+
+def cleanup_stale_sessions():
+    """Remove sessions that have been idle for too long"""
+    current_time = time.time()
+    stale_sessions = []
+    
+    for session_id, session in sessions.items():
+        if not session.running and session.start_time:
+            idle_time = current_time - session.start_time
+            if idle_time > SESSION_TIMEOUT:
+                stale_sessions.append(session_id)
+    
+    for session_id in stale_sessions:
+        print(f"Removing stale session: {session_id}")
+        del sessions[session_id]
+    
+    return len(stale_sessions)
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "firebase_enabled": FIREBASE_ENABLED}
 
 @app.get("/games")
-async def list_active_games():
+@limiter.limit("30/minute")
+async def list_active_games(request: Request):
     """List all active game sessions"""
+    # Cleanup stale sessions
+    cleanup_stale_sessions()
+    
     games = []
     for session_id, session in sessions.items():
         games.append({
@@ -59,6 +94,16 @@ async def spectate_game(websocket: WebSocket, session_id: str):
             return
             
         session = sessions[session_id]
+        
+        # Check spectator limit
+        if len(session.spectators) >= MAX_SPECTATORS_PER_GAME:
+            await websocket.send_text(json.dumps({
+                "type": "error",
+                "message": "Spectator limit reached"
+            }))
+            await websocket.close()
+            return
+        
         session.spectators.append(websocket)
         print(f"Spectator joined session {session_id} (total: {len(session.spectators)})")
         
@@ -99,7 +144,8 @@ async def spectate_game(websocket: WebSocket, session_id: str):
             print(f"Spectator left session {session_id} (remaining: {len(sessions[session_id].spectators)})")
 
 @app.get("/replays")
-async def list_replays():
+@limiter.limit("30/minute")
+async def list_replays(request: Request):
     """List all available replays"""
     replay_list = []
     for replay_id, replay_data in replays.items():
@@ -118,7 +164,8 @@ async def list_replays():
     return {"replays": replay_list}
 
 @app.get("/replay/{replay_id}")
-async def get_replay(replay_id: str):
+@limiter.limit("60/minute")
+async def get_replay(replay_id: str, request: Request):
     """Get a specific replay"""
     if replay_id not in replays:
         return {"error": "Replay not found"}, 404
@@ -127,14 +174,43 @@ async def get_replay(replay_id: str):
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
+    
+    # Check session limit
+    if len(sessions) >= MAX_SESSIONS:
+        await websocket.send_text(json.dumps({
+            "type": "error",
+            "message": "Server at capacity. Please try again later."
+        }))
+        await websocket.close()
+        return
+    
     session_id = str(uuid.uuid4())
     session = None
     user_id = "anonymous"
     
     try:
         # Wait for start message (with optional auth)
-        data = await websocket.receive_text()
+        data = await asyncio.wait_for(websocket.receive_text(), timeout=10.0)
+        
+        # Validate message size
+        if len(data) > 1024:  # 1KB limit
+            await websocket.send_text(json.dumps({
+                "type": "error",
+                "message": "Message too large"
+            }))
+            await websocket.close()
+            return
+        
         message = json.loads(data)
+        
+        # Validate message structure
+        if not isinstance(message, dict) or "type" not in message:
+            await websocket.send_text(json.dumps({
+                "type": "error",
+                "message": "Invalid message format"
+            }))
+            await websocket.close()
+            return
         
         # Optional authentication
         if FIREBASE_ENABLED and message.get("token"):
@@ -150,6 +226,11 @@ async def websocket_endpoint(websocket: WebSocket):
         
         if message.get("type") == "start":
             difficulty = message.get("difficulty", "simple")
+            
+            # Validate difficulty
+            if difficulty not in ["simple", "medium", "hard"]:
+                difficulty = "simple"
+            
             session = GameSession(session_id, websocket, difficulty)
             session.user_id = user_id
             sessions[session_id] = session
@@ -165,10 +246,29 @@ async def websocket_endpoint(websocket: WebSocket):
             async def handle_messages():
                 while session.running:
                     try:
-                        data = await websocket.receive_text()
+                        data = await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
+                        
+                        # Validate message size
+                        if len(data) > 1024:
+                            print(f"Message too large from {session_id}")
+                            break
+                        
                         msg = json.loads(data)
+                        
+                        # Validate message structure
+                        if not isinstance(msg, dict):
+                            continue
+                        
                         if msg.get("type") == "input":
-                            session.handle_input(msg.get("action"))
+                            action = msg.get("action")
+                            # Validate action
+                            if action in ["thrust_on", "thrust_off", "rotate_left", "rotate_right", "rotate_stop"]:
+                                session.handle_input(action)
+                    except asyncio.TimeoutError:
+                        continue
+                    except json.JSONDecodeError:
+                        print(f"Invalid JSON from {session_id}")
+                        break
                     except Exception as e:
                         print(f"Message handling error: {e}")
                         break
@@ -190,6 +290,14 @@ async def websocket_endpoint(websocket: WebSocket):
             # Save replay before deleting session
             if session and session.replay:
                 replay_id = f"{session_id}_{int(time.time())}"
+                
+                # Enforce replay limit
+                if len(replays) >= MAX_REPLAYS:
+                    # Remove oldest replay
+                    oldest_id = min(replays.keys(), key=lambda k: replays[k]['metadata'].get('timestamp', 0))
+                    del replays[oldest_id]
+                    print(f"Removed oldest replay: {oldest_id}")
+                
                 replays[replay_id] = session.replay.to_dict()
                 print(f"Saved replay: {replay_id}")
                 print(f"Total replays in memory: {len(replays)}")
