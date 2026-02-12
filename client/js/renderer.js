@@ -96,7 +96,7 @@ export class Renderer {
         this.ctx.restore();
     }
     
-    drawHUD(lander, altitude, speed) {
+    drawHUD(lander, altitude, speed, spectatorCount) {
         if (!lander) return;
         
         this.ctx.font = '16px monospace';
@@ -127,6 +127,14 @@ export class Renderer {
             const targetText = item.target ? ` (${item.target})` : '';
             this.ctx.fillText(text + targetText, 10, 30 + i * 20);
         });
+        
+        // Spectator count (top right)
+        if (spectatorCount !== undefined) {
+            this.ctx.fillStyle = '#888';
+            this.ctx.font = '14px monospace';
+            const text = `👁 ${spectatorCount} watching`;
+            this.ctx.fillText(text, this.width - 150, 30);
+        }
         
         // Fuel bar
         const barWidth = 200;
@@ -160,6 +168,6 @@ export class Renderer {
         
         this.drawTerrain(gameState.terrain);
         this.drawLander(gameState.lander, thrusting);
-        this.drawHUD(gameState.lander, gameState.altitude, gameState.speed);
+        this.drawHUD(gameState.lander, gameState.altitude, gameState.speed, gameState.spectatorCount);
     }
 }

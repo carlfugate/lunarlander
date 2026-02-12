@@ -197,6 +197,7 @@ function spectateGame(sessionId) {
         gameState.thrusting = data.thrusting || false;
         gameState.altitude = data.altitude || 0;
         gameState.speed = data.speed || 0;
+        gameState.spectatorCount = data.spectator_count;
     };
     
     wsClient.onGameOver = (data) => {
@@ -302,6 +303,7 @@ async function startGame(difficulty = 'simple') {
             gameState.thrusting = data.thrusting || false;
             gameState.altitude = data.altitude || 0;
             gameState.speed = data.speed || 0;
+            gameState.spectatorCount = data.spectator_count;
         };
         
         wsClient.onGameOver = (data) => {

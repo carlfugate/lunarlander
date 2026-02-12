@@ -121,7 +121,8 @@ class GameSession:
             "speed": speed,
             "thrusting": self.current_thrust,
             "nearest_landing_zone": nearest_zone,
-            "all_landing_zones": self.terrain.landing_zones
+            "all_landing_zones": self.terrain.landing_zones,
+            "spectator_count": len(self.spectators)
         }
         
         # Send to player

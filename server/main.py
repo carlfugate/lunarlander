@@ -60,13 +60,14 @@ async def spectate_game(websocket: WebSocket, session_id: str):
             
         session = sessions[session_id]
         session.spectators.append(websocket)
-        print(f"Spectator joined session {session_id}")
+        print(f"Spectator joined session {session_id} (total: {len(session.spectators)})")
         
         # Send current game state to spectator immediately
         init_message = {
             "type": "init",
             "terrain": session.terrain.to_dict(),
             "lander": session.lander.to_dict(),
+            "spectator_count": len(session.spectators),
             "constants": {
                 "gravity": 1.62,
                 "thrust_power": 5.0,
@@ -95,7 +96,7 @@ async def spectate_game(websocket: WebSocket, session_id: str):
     finally:
         if session_id in sessions and websocket in sessions[session_id].spectators:
             sessions[session_id].spectators.remove(websocket)
-            print(f"Spectator left session {session_id}")
+            print(f"Spectator left session {session_id} (remaining: {len(sessions[session_id].spectators)})")
 
 @app.get("/replays")
 async def list_replays():
