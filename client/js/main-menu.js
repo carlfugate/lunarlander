@@ -293,7 +293,6 @@ function startGameLoop() {
         animationFrameId = requestAnimationFrame(gameLoop);
     }
 }
-}
 
 document.addEventListener('keydown', (e) => {
     if (e.key === 'r' || e.key === 'R') {
