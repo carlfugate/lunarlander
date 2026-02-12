@@ -84,6 +84,8 @@ body {
 
 #gameCanvas {
     border: 2px solid #333;
+    display: block;
+    margin: 0 auto;
 }
 
 #modeIndicator {
