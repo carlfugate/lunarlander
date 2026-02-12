@@ -239,7 +239,6 @@ async def websocket_endpoint(websocket: WebSocket):
             await session.send_initial_state()
             
             # Start game loop in background
-            import asyncio
             game_task = asyncio.create_task(session.start())
             
             # Handle incoming messages in parallel
