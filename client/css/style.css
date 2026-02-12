@@ -70,6 +70,45 @@ body {
     outline-offset: 2px;
 }
 
+.difficulty-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.difficulty-btn {
+    background: rgba(0, 255, 0, 0.1);
+    border: 2px solid #0f0;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: monospace;
+    color: #0f0;
+    text-align: left;
+}
+
+.difficulty-btn:hover {
+    background: rgba(0, 255, 0, 0.2);
+    transform: translateX(5px);
+}
+
+.difficulty-btn:focus {
+    outline: 2px solid #0f0;
+    outline-offset: 2px;
+}
+
+.difficulty-name {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.difficulty-desc {
+    font-size: 14px;
+    color: #888;
+}
+
 #app {
     position: fixed;
     top: 0;

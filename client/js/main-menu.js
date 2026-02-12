@@ -17,23 +17,33 @@ let gameActive = false;
 let currentMode = null;
 let wsClient = null;
 let animationFrameId = null;
+let selectedDifficulty = 'simple';
 
 // Menu buttons
 document.getElementById('playBtn').addEventListener('click', () => {
-    console.log('Play button clicked');
-    stopGameLoop();
-    menuEl.classList.add('hidden');
-    appEl.classList.remove('hidden');
-    // Force display
-    appEl.style.display = 'block';
-    menuEl.style.display = 'none';
-    console.log('Menu hidden:', menuEl.classList.contains('hidden'));
-    console.log('App visible:', !appEl.classList.contains('hidden'));
-    currentMode = 'play';
-    modeIndicatorEl.textContent = 'PLAYING';
-    // Trigger canvas resize after app is visible
-    window.dispatchEvent(new Event('resize'));
-    startGame();
+    document.querySelector('.menu-buttons').classList.add('hidden');
+    document.getElementById('difficultySelect').classList.remove('hidden');
+});
+
+// Difficulty selection
+document.querySelectorAll('.difficulty-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        selectedDifficulty = btn.dataset.difficulty;
+        stopGameLoop();
+        menuEl.classList.add('hidden');
+        appEl.classList.remove('hidden');
+        appEl.style.display = 'block';
+        menuEl.style.display = 'none';
+        currentMode = 'play';
+        modeIndicatorEl.textContent = 'PLAYING';
+        window.dispatchEvent(new Event('resize'));
+        startGame(selectedDifficulty);
+    });
+});
+
+document.getElementById('backFromDifficulty').addEventListener('click', () => {
+    document.getElementById('difficultySelect').classList.add('hidden');
+    document.querySelector('.menu-buttons').classList.remove('hidden');
 });
 
 document.getElementById('spectateBtn').addEventListener('click', async () => {
@@ -202,7 +212,9 @@ function spectateGame(sessionId) {
     
     wsClient.onGameOver = (data) => {
         const result = data.landed ? 'LANDED!' : 'CRASHED!';
-        statusEl.innerHTML = `<div style="font-size: 24px;">${result}</div><div>Press ESC for menu</div>`;
+        const score = data.score || 0;
+        const scoreText = data.landed ? `<div style="font-size: 20px; margin: 10px 0;">Score: ${score}</div>` : '';
+        statusEl.innerHTML = `<div style="font-size: 24px;">${result}</div>${scoreText}<div>Press ESC for menu</div>`;
         statusEl.classList.add('visible');
     };
     
@@ -309,8 +321,15 @@ async function startGame(difficulty = 'simple') {
         wsClient.onGameOver = (data) => {
             gameActive = false;
             const result = data.landed ? 'LANDED!' : 'CRASHED!';
+            const score = data.score || 0;
+            const scoreText = data.landed ? `Score: ${score}` : '';
             const stats = `Time: ${data.time.toFixed(1)}s | Fuel: ${data.fuel_remaining.toFixed(0)} | Inputs: ${data.inputs}`;
-            statusEl.innerHTML = `<div style="font-size: 24px;">${result}</div><div>${stats}</div><div>Press R to restart | ESC for menu</div>`;
+            statusEl.innerHTML = `
+                <div style="font-size: 24px;">${result}</div>
+                ${scoreText ? `<div style="font-size: 20px; margin: 10px 0;">${scoreText}</div>` : ''}
+                <div>${stats}</div>
+                <div>Press R to restart | ESC for menu</div>
+            `;
             statusEl.style.color = data.landed ? '#0f0' : '#f00';
             statusEl.style.borderColor = data.landed ? '#0f0' : '#f00';
             statusEl.classList.add('visible');

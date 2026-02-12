@@ -14,6 +14,24 @@
             <button id="spectateBtn" class="menu-btn">Spectate Live Game</button>
             <button id="replayBtn" class="menu-btn">Watch Replay</button>
         </div>
+        <div id="difficultySelect" class="hidden">
+            <h2>Select Difficulty</h2>
+            <div class="difficulty-buttons">
+                <button class="difficulty-btn" data-difficulty="simple">
+                    <div class="difficulty-name">Easy</div>
+                    <div class="difficulty-desc">Gentle terrain, more fuel</div>
+                </button>
+                <button class="difficulty-btn" data-difficulty="medium">
+                    <div class="difficulty-name">Medium</div>
+                    <div class="difficulty-desc">Moderate terrain, standard fuel</div>
+                </button>
+                <button class="difficulty-btn" data-difficulty="hard">
+                    <div class="difficulty-name">Hard</div>
+                    <div class="difficulty-desc">Rough terrain, limited fuel</div>
+                </button>
+            </div>
+            <button id="backFromDifficulty" class="menu-btn">Back</button>
+        </div>
         <div id="gameList" class="hidden">
             <h2>Active Games</h2>
             <div id="gameListContent"></div>

@@ -142,6 +142,9 @@ class GameSession:
     async def send_game_over(self):
         elapsed_time = time.time() - self.start_time
         
+        # Calculate score
+        score = self.calculate_score(elapsed_time)
+        
         # Finalize replay
         if self.replay:
             self.replay.finalize(
@@ -162,6 +165,7 @@ class GameSession:
             "time": elapsed_time,
             "fuel_remaining": self.lander.fuel,
             "inputs": self.input_count,
+            "score": score,
             "replay_id": replay_id
         }
         
@@ -174,6 +178,33 @@ class GameSession:
                 await spectator_ws.send_text(json.dumps(message))
             except:
                 pass
+    
+    def calculate_score(self, elapsed_time):
+        """Calculate score based on landing success, fuel, time, and difficulty"""
+        if self.lander.crashed:
+            return 0
+        
+        if not self.lander.landed:
+            return 0
+        
+        # Base score for successful landing
+        score = 1000
+        
+        # Fuel bonus (up to 500 points)
+        fuel_bonus = int((self.lander.fuel / 1000) * 500)
+        score += fuel_bonus
+        
+        # Time bonus (faster = better, up to 300 points)
+        # Assume 60s is slow, 20s is fast
+        time_bonus = max(0, int(300 - (elapsed_time - 20) * 5))
+        score += time_bonus
+        
+        # Difficulty multiplier
+        multipliers = {"simple": 1.0, "medium": 1.5, "hard": 2.0}
+        multiplier = multipliers.get(self.difficulty, 1.0)
+        score = int(score * multiplier)
+        
+        return score
         
     async def send_initial_state(self):
         message = {
