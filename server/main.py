@@ -261,8 +261,10 @@ async def websocket_endpoint(websocket: WebSocket):
                         if msg.get("type") == "input":
                             action = msg.get("action")
                             # Validate action
-                            if action in ["thrust_on", "thrust_off", "rotate_left", "rotate_right", "rotate_stop"]:
+                            if action in ["thrust", "thrust_on", "thrust_off", "rotate_left", "rotate_right", "rotate_stop"]:
                                 session.handle_input(action)
+                            else:
+                                print(f"Invalid action from {session_id}: {action}")
                     except asyncio.TimeoutError:
                         continue
                     except json.JSONDecodeError:

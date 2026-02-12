@@ -236,7 +236,7 @@ class GameSession:
     def handle_input(self, action):
         self.input_count += 1
         # Only log state changes, not every input
-        if action == "thrust":
+        if action == "thrust" or action == "thrust_on":
             if not self.current_thrust:
                 print(f"[{time.time():.3f}] THRUST ON")
             self.current_thrust = True
