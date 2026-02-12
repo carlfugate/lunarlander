@@ -1,7 +1,7 @@
 import math
 
 GRAVITY = 1.62  # m/s² (lunar gravity)
-THRUST_POWER = 5.0  # m/s² acceleration (stronger thrust)
+THRUST_POWER = 8.0  # m/s² acceleration (increased for better control)
 ROTATION_SPEED = 3.0  # radians/s
 INITIAL_FUEL = 1000.0
 FUEL_CONSUMPTION_RATE = 10.0  # units/s when thrusting
