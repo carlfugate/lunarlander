@@ -405,6 +405,7 @@ document.addEventListener('keydown', (e) => {
         appEl.classList.add('hidden');
         menuEl.classList.remove('hidden');
         document.querySelector('.menu-buttons').classList.remove('hidden');
+        document.getElementById('difficultySelect').classList.add('hidden');
         document.getElementById('gameList').classList.add('hidden');
         document.getElementById('replayList').classList.add('hidden');
         statusEl.classList.remove('visible');
