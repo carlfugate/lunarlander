@@ -17,14 +17,14 @@ class Terrain:
             for x in range(0, self.width + 1, 50):
                 y = y_base + random.randint(-20, 20)
                 points.append((x, y))
-        elif difficulty == "intermediate":
+        elif difficulty == "medium":
             # Rolling hills
             y = self.height - 150
             for x in range(0, self.width + 1, 40):
                 y += random.randint(-30, 30)
                 y = max(self.height - 300, min(self.height - 50, y))
                 points.append((x, y))
-        else:  # advanced
+        else:  # hard
             # Steep mountains
             y = self.height - 200
             for x in range(0, self.width + 1, 30):
@@ -44,14 +44,14 @@ class Terrain:
             if abs(y2 - y1) < 5:
                 width = x2 - x1
                 if (self.difficulty == "simple" and width >= 50) or \
-                   (self.difficulty == "intermediate" and width >= 40) or \
-                   (self.difficulty == "advanced" and width >= 30):
+                   (self.difficulty == "medium" and width >= 40) or \
+                   (self.difficulty == "hard" and width >= 30):
                     zones.append({
                         "x1": x1,
                         "x2": x2,
                         "y": y1,
                         "multiplier": 1.0 if self.difficulty == "simple" else 
-                                     1.5 if self.difficulty == "intermediate" else 2.0
+                                     1.5 if self.difficulty == "medium" else 2.0
                     })
         return zones
         
