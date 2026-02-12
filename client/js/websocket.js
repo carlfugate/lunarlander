@@ -81,7 +81,18 @@ export class WebSocketClient {
     
     close() {
         if (this.ws) {
+            // Clean up event handlers to prevent memory leaks
+            this.ws.onopen = null;
+            this.ws.onmessage = null;
+            this.ws.onerror = null;
+            this.ws.onclose = null;
             this.ws.close();
+            this.ws = null;
         }
+        this.connected = false;
+        this.onTelemetry = null;
+        this.onInit = null;
+        this.onGameOver = null;
+        this.onError = null;
     }
 }

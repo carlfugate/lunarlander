@@ -15,9 +15,11 @@ let inputHandler = null;
 let gameActive = false;
 let currentMode = null;
 let wsClient = null;
+let animationFrameId = null;
 
 // Menu buttons
 document.getElementById('playBtn').addEventListener('click', () => {
+    stopGameLoop();
     menuEl.classList.add('hidden');
     appEl.classList.remove('hidden');
     currentMode = 'play';
@@ -26,73 +28,114 @@ document.getElementById('playBtn').addEventListener('click', () => {
 });
 
 document.getElementById('spectateBtn').addEventListener('click', async () => {
+    stopGameLoop();
     document.querySelector('.menu-buttons').classList.add('hidden');
     document.getElementById('gameList').classList.remove('hidden');
     await loadActiveGames();
 });
 
 document.getElementById('replayBtn').addEventListener('click', async () => {
+    stopGameLoop();
     document.querySelector('.menu-buttons').classList.add('hidden');
     document.getElementById('replayList').classList.remove('hidden');
     await loadReplays();
 });
 
 document.getElementById('backFromGames').addEventListener('click', () => {
+    stopGameLoop();
     document.querySelector('.menu-buttons').classList.remove('hidden');
     document.getElementById('gameList').classList.add('hidden');
 });
 
 document.getElementById('backFromReplays').addEventListener('click', () => {
+    stopGameLoop();
     document.querySelector('.menu-buttons').classList.remove('hidden');
     document.getElementById('replayList').classList.add('hidden');
 });
 
 async function loadActiveGames() {
-    const response = await fetch('http://localhost:8000/games');
-    const data = await response.json();
     const listEl = document.getElementById('gameListContent');
+    listEl.innerHTML = '<p>Loading games...</p>';
     
-    if (data.games.length === 0) {
-        listEl.innerHTML = '<p>No active games</p>';
-        return;
+    try {
+        const response = await fetch('http://localhost:8000/games');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        
+        if (data.games.length === 0) {
+            listEl.innerHTML = '<p>No active games</p>';
+            return;
+        }
+        
+        listEl.innerHTML = '';
+        data.games.forEach(game => {
+            const gameItem = document.createElement('div');
+            gameItem.className = 'game-item';
+            gameItem.dataset.sessionId = game.session_id;
+            
+            const playerDiv = document.createElement('div');
+            playerDiv.textContent = `Player: ${game.user_id}`;
+            
+            const difficultyDiv = document.createElement('div');
+            difficultyDiv.textContent = `Difficulty: ${game.difficulty}`;
+            
+            const statsDiv = document.createElement('div');
+            statsDiv.textContent = `Duration: ${game.duration.toFixed(0)}s | Spectators: ${game.spectators}`;
+            
+            gameItem.appendChild(playerDiv);
+            gameItem.appendChild(difficultyDiv);
+            gameItem.appendChild(statsDiv);
+            gameItem.addEventListener('click', () => spectateGame(game.session_id));
+            
+            listEl.appendChild(gameItem);
+        });
+    } catch (error) {
+        console.error('Failed to load games:', error);
+        listEl.innerHTML = '<p style="color: #f00;">Failed to load games. Please try again.</p>';
     }
-    
-    listEl.innerHTML = data.games.map(game => `
-        <div class="game-item" data-session-id="${game.session_id}">
-            <div>Player: ${game.user_id}</div>
-            <div>Difficulty: ${game.difficulty}</div>
-            <div>Duration: ${game.duration.toFixed(0)}s | Spectators: ${game.spectators}</div>
-        </div>
-    `).join('');
-    
-    document.querySelectorAll('.game-item').forEach(item => {
-        item.addEventListener('click', () => spectateGame(item.dataset.sessionId));
-    });
 }
 
 async function loadReplays() {
-    const response = await fetch('http://localhost:8000/replays');
-    const data = await response.json();
     const listEl = document.getElementById('replayListContent');
+    listEl.innerHTML = '<p>Loading replays...</p>';
     
-    if (data.replays.length === 0) {
-        listEl.innerHTML = '<p>No replays available</p>';
-        return;
+    try {
+        const response = await fetch('http://localhost:8000/replays');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        
+        if (data.replays.length === 0) {
+            listEl.innerHTML = '<p>No replays available</p>';
+            return;
+        }
+        
+        listEl.innerHTML = '';
+        data.replays.forEach(replay => {
+            const replayItem = document.createElement('div');
+            replayItem.className = 'replay-item';
+            replayItem.dataset.replayId = replay.replay_id;
+            
+            const statusDiv = document.createElement('div');
+            const status = replay.landed ? '✓ LANDED' : '✗ CRASHED';
+            statusDiv.textContent = `${status} - ${replay.user_id}`;
+            
+            const statsDiv = document.createElement('div');
+            statsDiv.textContent = `Time: ${replay.duration.toFixed(1)}s | Difficulty: ${replay.difficulty}`;
+            
+            replayItem.appendChild(statusDiv);
+            replayItem.appendChild(statsDiv);
+            replayItem.addEventListener('click', () => playReplay(replay.replay_id));
+            
+            listEl.appendChild(replayItem);
+        });
+    } catch (error) {
+        console.error('Failed to load replays:', error);
+        listEl.innerHTML = '<p style="color: #f00;">Failed to load replays. Please try again.</p>';
     }
-    
-    listEl.innerHTML = data.replays.map(replay => `
-        <div class="replay-item" data-replay-id="${replay.replay_id}">
-            <div>${replay.landed ? '✓ LANDED' : '✗ CRASHED'} - ${replay.user_id}</div>
-            <div>Time: ${replay.duration.toFixed(1)}s | Difficulty: ${replay.difficulty}</div>
-        </div>
-    `).join('');
-    
-    document.querySelectorAll('.replay-item').forEach(item => {
-        item.addEventListener('click', () => playReplay(item.dataset.replayId));
-    });
 }
 
 function spectateGame(sessionId) {
+    stopGameLoop();
     menuEl.classList.add('hidden');
     appEl.classList.remove('hidden');
     currentMode = 'spectate';
@@ -105,6 +148,7 @@ function spectateGame(sessionId) {
         gameState.terrain = data.terrain;
         gameState.lander = data.lander;
         gameState.thrusting = false;
+        startGameLoop();
     };
     
     wsClient.onTelemetry = (data) => {
@@ -124,50 +168,63 @@ function spectateGame(sessionId) {
 }
 
 async function playReplay(replayId) {
+    stopGameLoop();
     menuEl.classList.add('hidden');
     appEl.classList.remove('hidden');
     currentMode = 'replay';
     modeIndicatorEl.textContent = 'REPLAY';
     
-    // Fetch replay data
-    const response = await fetch(`http://localhost:8000/replay/${replayId}`);
-    const replayData = await response.json();
-    
-    // Set up game state with replay terrain
-    gameState.terrain = replayData.metadata.terrain;
-    gameState.lander = null;
-    
-    // Create replay player
-    const replayPlayer = new ReplayPlayer(replayData);
-    
-    // Play the replay
-    let frameIndex = 0;
-    const playbackSpeed = 1.0; // 1x speed
-    const frameDelay = (1000 / 30) / playbackSpeed; // 30Hz playback
-    
-    function replayLoop() {
-        if (frameIndex >= replayData.frames.length) {
-            statusEl.innerHTML = `<div style="font-size: 24px;">REPLAY ENDED</div><div>Press ESC for menu</div>`;
-            statusEl.classList.add('visible');
-            return;
+    try {
+        // Fetch replay data
+        const response = await fetch(`http://localhost:8000/replay/${replayId}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const replayData = await response.json();
+        
+        // Set up game state with replay terrain
+        gameState.terrain = replayData.metadata.terrain;
+        gameState.lander = null;
+        
+        // Create replay player
+        const replayPlayer = new ReplayPlayer(replayData);
+        
+        // Play the replay
+        let frameIndex = 0;
+        const playbackSpeed = 1.0; // 1x speed
+        const frameDelay = (1000 / 30) / playbackSpeed; // 30Hz playback
+        
+        startGameLoop();
+        
+        function replayLoop() {
+            if (currentMode !== 'replay') return; // Stop if mode changed
+            
+            if (frameIndex >= replayData.frames.length) {
+                statusEl.innerHTML = `<div style="font-size: 24px;">REPLAY ENDED</div><div>Press ESC for menu</div>`;
+                statusEl.classList.add('visible');
+                return;
+            }
+            
+            const frame = replayData.frames[frameIndex];
+            gameState.lander = frame.lander;
+            gameState.altitude = frame.altitude || 0;
+            gameState.speed = frame.speed || 0;
+            gameState.thrusting = frame.thrusting || false;
+            
+            frameIndex++;
+            setTimeout(() => requestAnimationFrame(replayLoop), frameDelay);
         }
         
-        const frame = replayData.frames[frameIndex];
-        gameState.lander = frame.lander;
-        gameState.altitude = frame.altitude || 0;
-        gameState.speed = frame.speed || 0;
-        gameState.thrusting = frame.thrusting || false;
-        
-        frameIndex++;
-        setTimeout(() => requestAnimationFrame(replayLoop), frameDelay);
+        replayLoop();
+    } catch (error) {
+        console.error('Failed to load replay:', error);
+        statusEl.innerHTML = '<p style="color: #f00;">Failed to load replay. Press ESC for menu.</p>';
+        statusEl.classList.add('visible');
     }
-    
-    replayLoop();
 }
 
 // Play mode WebSocket
 async function startGame(difficulty = 'simple') {
     try {
+        stopGameLoop();
         statusEl.textContent = 'Connecting...';
         statusEl.classList.add('visible');
         
@@ -179,6 +236,7 @@ async function startGame(difficulty = 'simple') {
             gameState.lander = data.lander;
             gameState.thrusting = false;
             gameActive = true;
+            startGameLoop();
         };
         
         wsClient.onTelemetry = (data) => {
@@ -217,7 +275,24 @@ function gameLoop(timestamp) {
         console.error("Error in game loop:", e);
     }
     
-    requestAnimationFrame(gameLoop);
+    // Only continue loop if in active mode
+    if (currentMode === 'play' || currentMode === 'spectate' || currentMode === 'replay') {
+        animationFrameId = requestAnimationFrame(gameLoop);
+    }
+}
+
+function stopGameLoop() {
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+}
+
+function startGameLoop() {
+    if (!animationFrameId) {
+        animationFrameId = requestAnimationFrame(gameLoop);
+    }
+}
 }
 
 document.addEventListener('keydown', (e) => {
@@ -228,7 +303,12 @@ document.addEventListener('keydown', (e) => {
         }
     }
     if (e.key === 'Escape') {
+        stopGameLoop();
         if (wsClient) wsClient.close();
+        if (inputHandler) {
+            inputHandler = null;
+        }
+        currentMode = null;
         appEl.classList.add('hidden');
         menuEl.classList.remove('hidden');
         document.querySelector('.menu-buttons').classList.remove('hidden');
@@ -239,4 +319,4 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-requestAnimationFrame(gameLoop);
+startGameLoop();
