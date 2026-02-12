@@ -9,7 +9,23 @@ export class WebSocketClient {
         this.onError = null;
     }
     
-    connect() {
+    async connect(maxRetries = 3) {
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                await this._attemptConnect();
+                return;
+            } catch (error) {
+                console.log(`Connection attempt ${attempt + 1}/${maxRetries} failed`);
+                if (attempt === maxRetries - 1) {
+                    throw error;
+                }
+                // Exponential backoff: 1s, 2s, 4s
+                await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
+            }
+        }
+    }
+    
+    _attemptConnect() {
         return new Promise((resolve, reject) => {
             this.ws = new WebSocket(this.url);
             

@@ -2,6 +2,7 @@ import { Renderer } from './renderer.js';
 import { WebSocketClient } from './websocket.js';
 import { InputHandler } from './input.js';
 import { ReplayPlayer } from './replay.js';
+import config from './config.js';
 
 const canvas = document.getElementById('gameCanvas');
 const renderer = new Renderer(canvas);
@@ -58,7 +59,7 @@ async function loadActiveGames() {
     listEl.innerHTML = '<p>Loading games...</p>';
     
     try {
-        const response = await fetch('http://localhost:8000/games');
+        const response = await fetch(`${config.API_URL}/games`);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         
@@ -107,7 +108,7 @@ async function loadReplays() {
     listEl.innerHTML = '<p>Loading replays...</p>';
     
     try {
-        const response = await fetch('http://localhost:8000/replays');
+        const response = await fetch(`${config.API_URL}/replays`);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         
@@ -169,7 +170,7 @@ function spectateGame(sessionId) {
     currentMode = 'spectate';
     modeIndicatorEl.textContent = 'SPECTATING';
     
-    const wsUrl = `ws://${window.location.hostname}:8000/spectate/${sessionId}`;
+    const wsUrl = `${config.WS_PROTOCOL}//${config.WS_HOST}/spectate/${sessionId}`;
     wsClient = new WebSocketClient(wsUrl);
     
     wsClient.onInit = (data) => {
@@ -214,7 +215,7 @@ async function playReplay(replayId) {
     
     try {
         // Fetch replay data
-        const response = await fetch(`http://localhost:8000/replay/${replayId}`);
+        const response = await fetch(`${config.API_URL}/replay/${replayId}`);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const replayData = await response.json();
         
@@ -268,7 +269,7 @@ async function startGame(difficulty = 'simple') {
         statusEl.textContent = 'Connecting...';
         statusEl.classList.add('visible');
         
-        const wsUrl = `ws://${window.location.hostname}:8000/ws`;
+        const wsUrl = `${config.WS_PROTOCOL}//${config.WS_HOST}/ws`;
         wsClient = new WebSocketClient(wsUrl);
         
         wsClient.onInit = (data) => {
@@ -307,10 +308,24 @@ async function startGame(difficulty = 'simple') {
 }
 
 let lastFrameTime = 0;
+let lastRenderState = null;
+
 function gameLoop(timestamp) {
     try {
         const thrusting = gameState.thrusting || (inputHandler ? inputHandler.isThrusting() : false);
-        renderer.render(gameState, thrusting);
+        
+        // Only render if state changed (dirty flag optimization)
+        const currentState = JSON.stringify({
+            lander: gameState.lander,
+            thrusting: thrusting,
+            altitude: gameState.altitude,
+            speed: gameState.speed
+        });
+        
+        if (currentState !== lastRenderState) {
+            renderer.render(gameState, thrusting);
+            lastRenderState = currentState;
+        }
     } catch (e) {
         console.error("Error in game loop:", e);
     }

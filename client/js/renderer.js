@@ -5,6 +5,25 @@ export class Renderer {
         this.width = canvas.width;
         this.height = canvas.height;
         this.camera = { x: 0, y: 0 };
+        
+        // Make canvas responsive
+        this.setupResponsive();
+    }
+    
+    setupResponsive() {
+        const resizeCanvas = () => {
+            const container = this.canvas.parentElement;
+            const scale = Math.min(
+                container.clientWidth / 1200,
+                container.clientHeight / 800,
+                1 // Don't scale up beyond native size
+            );
+            this.canvas.style.width = (1200 * scale) + 'px';
+            this.canvas.style.height = (800 * scale) + 'px';
+        };
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
     }
     
     clear() {
