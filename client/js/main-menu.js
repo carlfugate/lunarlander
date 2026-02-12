@@ -124,8 +124,44 @@ function spectateGame(sessionId) {
 }
 
 async function playReplay(replayId) {
-    alert('Replay playback coming soon! For now, check console for replay data.');
-    console.log('Replay ID:', replayId);
+    menuEl.classList.add('hidden');
+    appEl.classList.remove('hidden');
+    currentMode = 'replay';
+    modeIndicatorEl.textContent = 'REPLAY';
+    
+    // Fetch replay data
+    const response = await fetch(`http://localhost:8000/replay/${replayId}`);
+    const replayData = await response.json();
+    
+    // Set up game state with replay terrain
+    gameState.terrain = replayData.metadata.terrain;
+    gameState.lander = null;
+    
+    // Create replay player
+    const replayPlayer = new ReplayPlayer(replayData);
+    
+    // Play the replay
+    let frameIndex = 0;
+    const playbackSpeed = 1.0; // 1x speed
+    
+    function replayLoop() {
+        if (frameIndex >= replayData.frames.length) {
+            statusEl.innerHTML = `<div style="font-size: 24px;">REPLAY ENDED</div><div>Press ESC for menu</div>`;
+            statusEl.classList.add('visible');
+            return;
+        }
+        
+        const frame = replayData.frames[frameIndex];
+        gameState.lander = frame.lander;
+        gameState.altitude = frame.altitude || 0;
+        gameState.speed = frame.speed || 0;
+        gameState.thrusting = frame.thrusting || false;
+        
+        frameIndex++;
+        setTimeout(() => requestAnimationFrame(replayLoop), (1000 / 60) / playbackSpeed);
+    }
+    
+    replayLoop();
 }
 
 // Play mode WebSocket

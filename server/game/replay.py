@@ -12,14 +12,22 @@ class ReplayRecorder:
             "session_id": session_id,
             "user_id": user_id,
             "difficulty": difficulty,
-            "start_time": time.time()
+            "start_time": time.time(),
+            "terrain": None
         }
+    
+    def set_terrain(self, terrain_data):
+        """Store terrain data for replay"""
+        self.metadata["terrain"] = terrain_data
         
-    def record_frame(self, lander_state, terrain_height):
+    def record_frame(self, lander_state, terrain_height, altitude, speed, thrusting):
         """Record a single frame of game state"""
         self.frames.append({
             "lander": lander_state,
             "terrain_height": terrain_height,
+            "altitude": altitude,
+            "speed": speed,
+            "thrusting": thrusting,
             "timestamp": time.time()
         })
         

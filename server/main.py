@@ -96,6 +96,8 @@ async def spectate_game(websocket: WebSocket, session_id: str):
         if session_id in sessions and websocket in sessions[session_id].spectators:
             sessions[session_id].spectators.remove(websocket)
             print(f"Spectator left session {session_id}")
+
+@app.get("/replays")
 async def list_replays():
     """List all available replays"""
     replay_list = []
@@ -189,4 +191,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 replay_id = f"{session_id}_{int(time.time())}"
                 replays[replay_id] = session.replay.to_dict()
                 print(f"Saved replay: {replay_id}")
+                print(f"Total replays in memory: {len(replays)}")
+            else:
+                print(f"No replay to save for session {session_id}")
             del sessions[session_id]

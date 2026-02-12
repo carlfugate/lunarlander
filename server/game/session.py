@@ -30,6 +30,7 @@ class GameSession:
         # Initialize replay recorder
         if self.record_replay:
             self.replay = ReplayRecorder(self.session_id, self.user_id, self.difficulty)
+            self.replay.set_terrain(self.terrain.to_dict())
             
         await self.game_loop()
         
@@ -43,10 +44,15 @@ class GameSession:
             # Update physics with current input state
             self.lander.update(dt, self.current_thrust, self.current_rotate)
             
+            # Calculate altitude and speed for replay
+            terrain_height = self.terrain.get_height_at(self.lander.x)
+            altitude = terrain_height - self.lander.y
+            import math
+            speed = math.sqrt(self.lander.vx**2 + self.lander.vy**2)
+            
             # Record frame for replay
             if self.replay:
-                terrain_height = self.terrain.get_height_at(self.lander.x)
-                self.replay.record_frame(self.lander.to_dict(), terrain_height)
+                self.replay.record_frame(self.lander.to_dict(), terrain_height, altitude, speed, self.current_thrust)
             
             # Check collision
             terrain_y = self.terrain.get_height_at(self.lander.x)
