@@ -13,15 +13,16 @@ A browser-based Lunar Lander game with WebSocket API for AI players, featuring r
 
 ### Game Modes
 - **Play Mode**: Human players control with keyboard
-- **Spectator Mode**: Watch live games in real-time
-- **Replay Mode**: Watch recorded games (coming soon)
+- **Spectator Mode**: Watch live games in real-time with full telemetry
+- **Replay Mode**: Watch recorded games with accurate playback
 
 ### Technical Features
 - **WebSocket communication** for real-time gameplay
-- **Replay recording** - All games automatically recorded
-- **Live spectating** - Multiple spectators per game
+- **Replay recording** - All games automatically recorded with full state
+- **Live spectating** - Multiple spectators per game with real-time updates
 - **Color-coded HUD** - Green/red indicators for safe landing parameters
-- **Comprehensive telemetry** - Position, velocity, fuel, landing zones, altitude
+- **Comprehensive telemetry** - Position, velocity, fuel, landing zones, altitude, speed
+- **Server-calculated metrics** - Accurate altitude and speed from server physics
 
 ## Quick Start
 
