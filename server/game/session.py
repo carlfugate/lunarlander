@@ -37,6 +37,7 @@ class GameSession:
     async def game_loop(self):
         target_fps = 60
         dt = 1.0 / target_fps
+        frame_count = 0
         
         while self.running:
             loop_start = time.time()
@@ -76,15 +77,17 @@ class GameSession:
                 self.running = False
                 break
                 
-            # Send telemetry
-            await self.send_telemetry()
+            # Send telemetry (player at 60Hz, spectators at 30Hz)
+            send_to_spectators = (frame_count % 2 == 0)
+            await self.send_telemetry(send_to_spectators)
+            frame_count += 1
             
             # Sleep to maintain 60Hz
             elapsed = time.time() - loop_start
             sleep_time = max(0, dt - elapsed)
             await asyncio.sleep(sleep_time)
             
-    async def send_telemetry(self):
+    async def send_telemetry(self, send_to_spectators=True):
         # Find nearest landing zone
         nearest_zone = None
         min_distance = float('inf')
@@ -125,15 +128,16 @@ class GameSession:
             "spectator_count": len(self.spectators)
         }
         
-        # Send to player
+        # Send to player (always 60Hz)
         await self.websocket.send_text(json.dumps(message))
         
-        # Send to all spectators
-        for spectator_ws in self.spectators[:]:  # Copy list to avoid modification during iteration
-            try:
-                await spectator_ws.send_text(json.dumps(message))
-            except:
-                self.spectators.remove(spectator_ws)
+        # Send to spectators (30Hz when send_to_spectators=True)
+        if send_to_spectators:
+            for spectator_ws in self.spectators[:]:  # Copy list to avoid modification during iteration
+                try:
+                    await spectator_ws.send_text(json.dumps(message))
+                except:
+                    self.spectators.remove(spectator_ws)
         
     async def send_game_over(self):
         elapsed_time = time.time() - self.start_time
