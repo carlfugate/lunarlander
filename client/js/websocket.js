@@ -33,6 +33,12 @@ export class WebSocketClient {
             this.ws.onclose = () => {
                 this.connected = false;
                 console.log('WebSocket closed');
+                // Notify user of disconnection
+                if (typeof statusEl !== 'undefined' && statusEl) {
+                    statusEl.innerHTML = '<div style="font-size: 20px;">Connection lost</div><div>Press ESC for menu</div>';
+                    statusEl.style.color = '#f00';
+                    statusEl.classList.add('visible');
+                }
             };
         });
     }

@@ -63,15 +63,22 @@ async function loadActiveGames() {
         const data = await response.json();
         
         if (data.games.length === 0) {
-            listEl.innerHTML = '<p>No active games</p>';
+            listEl.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <p style="font-size: 20px; margin-bottom: 10px;">No active games</p>
+                    <p style="color: #888;">Start a new game to begin playing</p>
+                </div>
+            `;
             return;
         }
         
         listEl.innerHTML = '';
         data.games.forEach(game => {
-            const gameItem = document.createElement('div');
+            const gameItem = document.createElement('button');
             gameItem.className = 'game-item';
             gameItem.dataset.sessionId = game.session_id;
+            gameItem.setAttribute('role', 'button');
+            gameItem.setAttribute('aria-label', `Spectate ${game.user_id}'s game`);
             
             const playerDiv = document.createElement('div');
             playerDiv.textContent = `Player: ${game.user_id}`;
@@ -114,13 +121,16 @@ async function loadReplays() {
             // Skip incomplete replays
             if (replay.duration === null || replay.landed === null) return;
             
-            const replayItem = document.createElement('div');
+            const replayItem = document.createElement('button');
             replayItem.className = 'replay-item';
             replayItem.dataset.replayId = replay.replay_id;
+            replayItem.setAttribute('role', 'button');
+            const status = replay.landed ? 'successful landing' : 'crash';
+            replayItem.setAttribute('aria-label', `Watch ${replay.user_id}'s ${status} replay`);
             
             const statusDiv = document.createElement('div');
-            const status = replay.landed ? '✓ LANDED' : '✗ CRASHED';
-            statusDiv.textContent = `${status} - ${replay.user_id}`;
+            const statusText = replay.landed ? '✓ LANDED' : '✗ CRASHED';
+            statusDiv.textContent = `${statusText} - ${replay.user_id}`;
             
             const statsDiv = document.createElement('div');
             statsDiv.textContent = `Time: ${replay.duration.toFixed(1)}s | Difficulty: ${replay.difficulty}`;
@@ -134,7 +144,12 @@ async function loadReplays() {
         
         // Show message if no valid replays
         if (listEl.children.length === 0) {
-            listEl.innerHTML = '<p>No completed replays available</p>';
+            listEl.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <p style="font-size: 20px; margin-bottom: 10px;">No completed replays</p>
+                    <p style="color: #888;">Finish a game to create a replay</p>
+                </div>
+            `;
         }
     } catch (error) {
         console.error('Failed to load replays:', error);
@@ -142,7 +157,12 @@ async function loadReplays() {
     }
 }
 
+let isConnecting = false;
+
 function spectateGame(sessionId) {
+    if (isConnecting) return;
+    isConnecting = true;
+    
     stopGameLoop();
     menuEl.classList.add('hidden');
     appEl.classList.remove('hidden');
@@ -157,6 +177,7 @@ function spectateGame(sessionId) {
         gameState.lander = data.lander;
         gameState.thrusting = false;
         startGameLoop();
+        isConnecting = false;
     };
     
     wsClient.onTelemetry = (data) => {
@@ -172,10 +193,19 @@ function spectateGame(sessionId) {
         statusEl.classList.add('visible');
     };
     
-    wsClient.connect();
+    wsClient.connect().catch(() => {
+        isConnecting = false;
+        statusEl.innerHTML = '<div style="color: #f00;">Failed to connect. Press ESC for menu.</div>';
+        statusEl.classList.add('visible');
+    });
 }
 
+let isLoadingReplay = false;
+
 async function playReplay(replayId) {
+    if (isLoadingReplay) return;
+    isLoadingReplay = true;
+    
     stopGameLoop();
     menuEl.classList.add('hidden');
     appEl.classList.remove('hidden');
@@ -201,6 +231,7 @@ async function playReplay(replayId) {
         const frameDelay = (1000 / 30) / playbackSpeed; // 30Hz playback
         
         startGameLoop();
+        isLoadingReplay = false;
         
         function replayLoop() {
             if (currentMode !== 'replay') return; // Stop if mode changed
@@ -226,6 +257,7 @@ async function playReplay(replayId) {
         console.error('Failed to load replay:', error);
         statusEl.innerHTML = '<p style="color: #f00;">Failed to load replay. Press ESC for menu.</p>';
         statusEl.classList.add('visible');
+        isLoadingReplay = false;
     }
 }
 
