@@ -111,6 +111,9 @@ async function loadReplays() {
         
         listEl.innerHTML = '';
         data.replays.forEach(replay => {
+            // Skip incomplete replays
+            if (replay.duration === null || replay.landed === null) return;
+            
             const replayItem = document.createElement('div');
             replayItem.className = 'replay-item';
             replayItem.dataset.replayId = replay.replay_id;
@@ -128,6 +131,11 @@ async function loadReplays() {
             
             listEl.appendChild(replayItem);
         });
+        
+        // Show message if no valid replays
+        if (listEl.children.length === 0) {
+            listEl.innerHTML = '<p>No completed replays available</p>';
+        }
     } catch (error) {
         console.error('Failed to load replays:', error);
         listEl.innerHTML = '<p style="color: #f00;">Failed to load replays. Please try again.</p>';
