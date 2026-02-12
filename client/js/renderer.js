@@ -77,25 +77,26 @@ export class Renderer {
         this.ctx.restore();
     }
     
-    drawHUD(lander) {
+    drawHUD(lander, altitude, speed) {
         if (!lander) return;
         
         this.ctx.font = '16px monospace';
         
-        // Calculate landing parameters
-        const speed = Math.sqrt(lander.vx**2 + lander.vy**2);
+        // Use provided values or calculate fallback
+        const displaySpeed = speed !== undefined ? speed : Math.sqrt(lander.vx**2 + lander.vy**2);
+        const displayAltitude = altitude !== undefined ? altitude : (this.height - lander.y);
+        
         const angle = Math.abs(lander.rotation);
         const angleDegrees = (angle * 180 / Math.PI).toFixed(1);
         
         // Color based on safety thresholds
-        // Speed is only dangerous when descending (vy > 0) and too fast
-        const speedSafe = lander.vy < 0 || speed < 5.0;  // Updated to 5.0
+        const speedSafe = lander.vy < 0 || displaySpeed < 5.0;
         const angleSafe = angle < 0.3;
         
         const hud = [
             { label: 'Fuel', value: Math.floor(lander.fuel).toString(), color: lander.fuel > 100 ? '#0f0' : '#f00' },
-            { label: 'Altitude', value: Math.floor(this.height - lander.y).toString(), color: '#0f0' },
-            { label: 'Speed', value: speed.toFixed(2), color: speedSafe ? '#0f0' : '#f00', target: '< 5.0' },
+            { label: 'Altitude', value: Math.floor(displayAltitude).toString(), color: '#0f0' },
+            { label: 'Speed', value: displaySpeed.toFixed(2), color: speedSafe ? '#0f0' : '#f00', target: '< 5.0' },
             { label: 'Angle', value: angleDegrees + '°', color: angleSafe ? '#0f0' : '#f00', target: '< 17°' },
             { label: 'Vertical', value: lander.vy.toFixed(2), color: '#888' },
             { label: 'Horizontal', value: lander.vx.toFixed(2), color: '#888' }
@@ -140,6 +141,6 @@ export class Renderer {
         
         this.drawTerrain(gameState.terrain);
         this.drawLander(gameState.lander, thrusting);
-        this.drawHUD(gameState.lander);
+        this.drawHUD(gameState.lander, gameState.altitude, gameState.speed);
     }
 }

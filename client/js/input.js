@@ -9,10 +9,8 @@ export class InputHandler {
     }
     
     setupListeners() {
-        console.log('Setting up input listeners...');
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
         document.addEventListener('keyup', (e) => this.handleKeyUp(e));
-        console.log('Input listeners ready');
     }
     
     handleKeyDown(e) {
@@ -23,19 +21,16 @@ export class InputHandler {
             case 'ArrowUp':
                 this.thrusting = true;
                 this.wsClient.sendInput('thrust');
-                console.log('Thrust ON');
                 e.preventDefault();
                 break;
             case 'ArrowLeft':
                 this.rotating = 'left';
                 this.wsClient.sendInput('rotate_left');
-                console.log('Rotate LEFT');
                 e.preventDefault();
                 break;
             case 'ArrowRight':
                 this.rotating = 'right';
                 this.wsClient.sendInput('rotate_right');
-                console.log('Rotate RIGHT');
                 e.preventDefault();
                 break;
         }

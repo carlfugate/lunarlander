@@ -93,10 +93,13 @@ class SimpleLanderAI:
         # Thrust control - altitude-based strategy
         desired_thrust = False
         
-        # Priority 1: Don't descend if not over landing zone!
+        # Priority 1: Emergency hover if low and off-target (but don't build escape velocity!)
         if abs(x_error) > 20 and altitude < 50:
-            # Too low and not over target - thrust to stay up and navigate
-            desired_thrust = True
+            # Hover to stay up while navigating - but stop if going up too fast
+            if lander['vy'] < -2.0:  # Already going up fast enough
+                desired_thrust = False
+            else:
+                desired_thrust = lander['vy'] > 0.5  # Only thrust if descending
         # Priority 2: Always thrust if moving too fast horizontally at low altitude
         elif altitude < 200 and abs(lander['vx']) > 3.0:
             desired_thrust = True

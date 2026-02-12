@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import json
 import uuid
 import time
+import asyncio
 from game.session import GameSession
 try:
     from firebase_config import verify_token

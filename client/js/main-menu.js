@@ -10,10 +10,11 @@ const menuEl = document.getElementById('menu');
 const appEl = document.getElementById('app');
 const modeIndicatorEl = document.getElementById('modeIndicator');
 
-let gameState = { terrain: null, lander: null };
+let gameState = { terrain: null, lander: null, thrusting: false, altitude: 0, speed: 0 };
 let inputHandler = null;
 let gameActive = false;
 let currentMode = null;
+let wsClient = null;
 
 // Menu buttons
 document.getElementById('playBtn').addEventListener('click', () => {
@@ -98,15 +99,19 @@ function spectateGame(sessionId) {
     modeIndicatorEl.textContent = 'SPECTATING';
     
     const wsUrl = `ws://${window.location.hostname}:8000/spectate/${sessionId}`;
-    const wsClient = new WebSocketClient(wsUrl);
+    wsClient = new WebSocketClient(wsUrl);
     
     wsClient.onInit = (data) => {
         gameState.terrain = data.terrain;
         gameState.lander = data.lander;
+        gameState.thrusting = false;
     };
     
     wsClient.onTelemetry = (data) => {
         gameState.lander = data.lander;
+        gameState.thrusting = data.thrusting || false;
+        gameState.altitude = data.altitude || 0;
+        gameState.speed = data.speed || 0;
     };
     
     wsClient.onGameOver = (data) => {
@@ -124,33 +129,38 @@ async function playReplay(replayId) {
 }
 
 // Play mode WebSocket
-const wsUrl = `ws://${window.location.hostname}:8000/ws`;
-const wsClient = new WebSocketClient(wsUrl);
-
-wsClient.onInit = (data) => {
-    gameState.terrain = data.terrain;
-    gameState.lander = data.lander;
-    gameActive = true;
-};
-
-wsClient.onTelemetry = (data) => {
-    gameState.lander = data.lander;
-};
-
-wsClient.onGameOver = (data) => {
-    gameActive = false;
-    const result = data.landed ? 'LANDED!' : 'CRASHED!';
-    const stats = `Time: ${data.time.toFixed(1)}s | Fuel: ${data.fuel_remaining.toFixed(0)} | Inputs: ${data.inputs}`;
-    statusEl.innerHTML = `<div style="font-size: 24px;">${result}</div><div>${stats}</div><div>Press R to restart | ESC for menu</div>`;
-    statusEl.style.color = data.landed ? '#0f0' : '#f00';
-    statusEl.style.borderColor = data.landed ? '#0f0' : '#f00';
-    statusEl.classList.add('visible');
-};
-
 async function startGame(difficulty = 'simple') {
     try {
         statusEl.textContent = 'Connecting...';
         statusEl.classList.add('visible');
+        
+        const wsUrl = `ws://${window.location.hostname}:8000/ws`;
+        wsClient = new WebSocketClient(wsUrl);
+        
+        wsClient.onInit = (data) => {
+            gameState.terrain = data.terrain;
+            gameState.lander = data.lander;
+            gameState.thrusting = false;
+            gameActive = true;
+        };
+        
+        wsClient.onTelemetry = (data) => {
+            gameState.lander = data.lander;
+            gameState.thrusting = data.thrusting || false;
+            gameState.altitude = data.altitude || 0;
+            gameState.speed = data.speed || 0;
+        };
+        
+        wsClient.onGameOver = (data) => {
+            gameActive = false;
+            const result = data.landed ? 'LANDED!' : 'CRASHED!';
+            const stats = `Time: ${data.time.toFixed(1)}s | Fuel: ${data.fuel_remaining.toFixed(0)} | Inputs: ${data.inputs}`;
+            statusEl.innerHTML = `<div style="font-size: 24px;">${result}</div><div>${stats}</div><div>Press R to restart | ESC for menu</div>`;
+            statusEl.style.color = data.landed ? '#0f0' : '#f00';
+            statusEl.style.borderColor = data.landed ? '#0f0' : '#f00';
+            statusEl.classList.add('visible');
+        };
+        
         await wsClient.connect();
         wsClient.startGame(difficulty);
         inputHandler = new InputHandler(wsClient);
@@ -163,26 +173,32 @@ async function startGame(difficulty = 'simple') {
 
 let lastFrameTime = 0;
 function gameLoop(timestamp) {
-    const thrusting = inputHandler ? inputHandler.isThrusting() : false;
-    renderer.render(gameState, thrusting);
+    try {
+        const thrusting = gameState.thrusting || (inputHandler ? inputHandler.isThrusting() : false);
+        renderer.render(gameState, thrusting);
+    } catch (e) {
+        console.error("Error in game loop:", e);
+    }
+    
     requestAnimationFrame(gameLoop);
 }
 
 document.addEventListener('keydown', (e) => {
     if (e.key === 'r' || e.key === 'R') {
         if (!gameActive && currentMode === 'play') {
-            wsClient.close();
+            if (wsClient) wsClient.close();
             startGame();
         }
     }
     if (e.key === 'Escape') {
-        wsClient.close();
+        if (wsClient) wsClient.close();
         appEl.classList.add('hidden');
         menuEl.classList.remove('hidden');
         document.querySelector('.menu-buttons').classList.remove('hidden');
         document.getElementById('gameList').classList.add('hidden');
         document.getElementById('replayList').classList.add('hidden');
         statusEl.classList.remove('visible');
+        gameState = { terrain: null, lander: null, thrusting: false, altitude: 0, speed: 0 };
     }
 });
 

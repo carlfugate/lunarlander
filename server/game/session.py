@@ -113,6 +113,7 @@ class GameSession:
             "terrain_height": terrain_height,
             "altitude": altitude_above_terrain,
             "speed": speed,
+            "thrusting": self.current_thrust,
             "nearest_landing_zone": nearest_zone,
             "all_landing_zones": self.terrain.landing_zones
         }
