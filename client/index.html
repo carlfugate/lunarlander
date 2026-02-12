@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lunar Lander</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="menu" class="visible">
+        <h1>Lunar Lander</h1>
+        <div class="menu-buttons">
+            <button id="playBtn" class="menu-btn">Play Game</button>
+            <button id="spectateBtn" class="menu-btn">Spectate Live Game</button>
+            <button id="replayBtn" class="menu-btn">Watch Replay</button>
+        </div>
+        <div id="gameList" class="hidden">
+            <h2>Active Games</h2>
+            <div id="gameListContent"></div>
+            <button id="backFromGames" class="menu-btn">Back</button>
+        </div>
+        <div id="replayList" class="hidden">
+            <h2>Replays</h2>
+            <div id="replayListContent"></div>
+            <button id="backFromReplays" class="menu-btn">Back</button>
+        </div>
+    </div>
+    <div id="app" class="hidden">
+        <canvas id="gameCanvas" width="1200" height="800"></canvas>
+        <div id="modeIndicator"></div>
+        <div id="status">Connecting...</div>
+    </div>
+    <script type="module" src="js/main-menu.js"></script>
+</body>
+</html>

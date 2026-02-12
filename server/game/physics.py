@@ -1,0 +1,83 @@
+import math
+
+GRAVITY = 1.62  # m/s² (lunar gravity)
+THRUST_POWER = 5.0  # m/s² acceleration (stronger thrust)
+ROTATION_SPEED = 3.0  # radians/s
+INITIAL_FUEL = 1000.0
+FUEL_CONSUMPTION_RATE = 10.0  # units/s when thrusting
+
+class Lander:
+    def __init__(self, x=600, y=100):
+        self.x = float(x)
+        self.y = float(y)
+        self.vx = 0.0
+        self.vy = 0.0
+        self.rotation = 0.0  # radians, 0 = pointing up
+        self.fuel = INITIAL_FUEL
+        self.crashed = False
+        self.landed = False
+        
+    def update(self, dt, thrust, rotate):
+        if self.crashed or self.landed:
+            return
+            
+        # Apply rotation
+        if rotate == "left":
+            self.rotation -= ROTATION_SPEED * dt
+        elif rotate == "right":
+            self.rotation += ROTATION_SPEED * dt
+        
+        # Normalize rotation to -pi to pi
+        while self.rotation > math.pi:
+            self.rotation -= 2 * math.pi
+        while self.rotation < -math.pi:
+            self.rotation += 2 * math.pi
+            
+        # Apply thrust
+        if thrust and self.fuel > 0:
+            thrust_x = math.sin(self.rotation) * THRUST_POWER * dt
+            thrust_y = -math.cos(self.rotation) * THRUST_POWER * dt
+            self.vx += thrust_x
+            self.vy += thrust_y
+            self.fuel -= FUEL_CONSUMPTION_RATE * dt
+            self.fuel = max(0, self.fuel)
+            
+        # Apply gravity
+        self.vy += GRAVITY * dt
+        
+        # Update position
+        self.x += self.vx * dt
+        self.y += self.vy * dt
+        
+    def check_collision(self, terrain_y, is_landing_zone=False):
+        if self.y >= terrain_y:
+            speed = math.sqrt(self.vx**2 + self.vy**2)
+            angle_upright = abs(self.rotation) < 0.3  # ~17 degrees
+            angle_degrees = abs(self.rotation) * 180 / math.pi
+            
+            import time
+            timestamp = time.time()
+            print(f"[{timestamp:.3f}] COLLISION: lander_y={self.y:.2f}, terrain_y={terrain_y:.2f}, speed={speed:.2f}, angle={angle_degrees:.1f}°, upright={angle_upright}, landing_zone={is_landing_zone}")
+            
+            if is_landing_zone and angle_upright and speed < 5.0:  # Increased from 2.0 to 5.0
+                self.landed = True
+                self.y = terrain_y
+                self.vx = 0
+                self.vy = 0
+                print(f"[{timestamp:.3f}] ✓ LANDED SUCCESSFULLY!")
+            else:
+                self.crashed = True
+                self.y = terrain_y
+                print(f"[{timestamp:.3f}] ✗ CRASHED! (speed: {speed:.2f} >= 5.0 OR angle: {angle_degrees:.1f}° >= 17° OR not landing zone: {not is_landing_zone})")
+                
+    def to_dict(self):
+        return {
+            "x": self.x,
+            "y": self.y,
+            "vx": self.vx,
+            "vy": self.vy,
+            "rotation": self.rotation,
+            "fuel": self.fuel,
+            "crashed": self.crashed,
+            "landed": self.landed
+        }
