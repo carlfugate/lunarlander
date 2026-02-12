@@ -175,8 +175,11 @@ function spectateGame(sessionId) {
     stopGameLoop();
     menuEl.classList.add('hidden');
     appEl.classList.remove('hidden');
+    appEl.style.display = 'block';
+    menuEl.style.display = 'none';
     currentMode = 'spectate';
     modeIndicatorEl.textContent = 'SPECTATING';
+    window.dispatchEvent(new Event('resize'));
     
     const wsUrl = `${config.WS_PROTOCOL}//${config.WS_HOST}/spectate/${sessionId}`;
     wsClient = new WebSocketClient(wsUrl);
@@ -218,8 +221,11 @@ async function playReplay(replayId) {
     stopGameLoop();
     menuEl.classList.add('hidden');
     appEl.classList.remove('hidden');
+    appEl.style.display = 'block';
+    menuEl.style.display = 'none';
     currentMode = 'replay';
     modeIndicatorEl.textContent = 'REPLAY';
+    window.dispatchEvent(new Event('resize'));
     
     try {
         // Fetch replay data
