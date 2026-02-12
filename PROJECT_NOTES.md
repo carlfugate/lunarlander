@@ -251,16 +251,21 @@ The telemetry was designed to provide everything an AI needs without requiring c
 ### Phase 4: Spectator & Replay (Tasks 9-10)
 9. **Replay recording**: Frame capture, metadata, compression, REST API
 10. **Spectator mode**: Live viewing, multiple spectators, mid-game join
+11. **Replay playback**: Client-side player with frame-by-frame rendering
 
 **Key Decisions**:
 - Broadcast telemetry to spectators (same data as player)
 - Send current state on spectator join (mid-game support)
 - In-memory replay storage (fast, can extend to database)
+- 30Hz recording with quantization for 62% size reduction
 
 **Challenges Solved**:
 - Spectator black screen (needed to send init state immediately)
 - Broadcast to multiple connections (iterate spectator list)
 - Replay storage (finalize on game end, save before session cleanup)
+- HUD metrics accuracy (use server-calculated altitude/speed)
+- Thruster animation in spectator/replay (added thrusting state to telemetry)
+- Replay file size (30Hz + quantization: 2.5 MB → 900 KB)
 
 ### Phase 5: UI/UX Polish
 - **Menu system**: Play/Spectate/Replay mode selection
@@ -268,6 +273,13 @@ The telemetry was designed to provide everything an AI needs without requiring c
 - **Replay list**: Show recorded games with results
 - **Mode indicator**: Visual feedback for current mode
 - **ESC to menu**: Easy navigation
+- **HUD improvements**: Server-calculated metrics for accuracy
+
+### Phase 6: Optimization
+- **Replay compression**: 30Hz recording (50% fewer frames)
+- **Value quantization**: Round positions/velocities to reasonable precision
+- **Size reduction**: 2.5 MB → 900 KB per game (62% smaller)
+- **No visual impact**: 30Hz playback still smooth for this game type
 
 ## Technical Challenges & Solutions
 
@@ -325,6 +337,44 @@ The telemetry was designed to provide everything an AI needs without requiring c
 
 **Learning**: Late joiners need current state, not just future updates.
 
+### Challenge 7: Spectator Mode Not Rendering
+**Problem**: Spectator WebSocket connected but game loop wasn't rendering frames.
+
+**Root Cause**: `wsClient` was created as local variable in `spectateGame()`, not accessible to game loop.
+
+**Solution**: Made `wsClient` a global variable set by both play and spectate modes.
+
+**Learning**: Shared state between functions needs proper scope management.
+
+### Challenge 8: Incorrect HUD Metrics
+**Problem**: HUD showing altitude 105m when AI landed (should be 0m).
+
+**Root Cause**: Client calculating altitude as `screen_height - lander.y` instead of using server's terrain-aware calculation.
+
+**Solution**: Pass server-calculated altitude and speed to renderer via gameState.
+
+**Learning**: Server-authoritative means trusting server calculations, not recalculating on client.
+
+### Challenge 9: AI Emergency Hover Loop
+**Problem**: AI getting stuck hovering at 50m altitude, building escape velocity, falling back down, repeating.
+
+**Root Cause**: Emergency hover logic thrusting unconditionally when low and off-target.
+
+**Solution**: Added velocity checking - only thrust if descending, stop if ascending too fast.
+
+**Learning**: Control systems need velocity limits, not just position-based logic.
+
+### Challenge 10: Large Replay Files
+**Problem**: Replays consuming 2.5 MB per 2-minute game (17 KB/s).
+
+**Root Cause**: Recording every frame at 60Hz with full floating-point precision.
+
+**Solution**: 30Hz recording + quantization (positions to 0.1, velocities to 0.01).
+
+**Result**: 62% size reduction (2.5 MB → 900 KB) with no visual degradation.
+
+**Learning**: Match data precision to actual display/usage requirements.
+
 ## Performance Characteristics
 
 ### Server
@@ -342,6 +392,8 @@ The telemetry was designed to provide everything an AI needs without requiring c
 - **Telemetry size**: ~500 bytes per message
 - **Bandwidth per game**: ~30 KB/s (60 messages/s × 500 bytes)
 - **Spectator overhead**: +30 KB/s per spectator
+- **Replay size**: ~6.5 KB/s (30Hz recording with quantization)
+- **Typical replay**: ~900 KB for 2.5 minute game
 
 ## Future Enhancements
 
@@ -353,11 +405,12 @@ The telemetry was designed to provide everything an AI needs without requiring c
 5. **Authentication UI**: Login/register with Firebase
 
 ### Medium Term
-1. **Replay playback**: Store terrain in replay, implement playback controls
+1. **Replay playback controls**: Play/pause/speed/scrub controls
 2. **AI tournament mode**: Multiple AIs compete on same terrain
 3. **Terrain editor**: Custom terrain creation and sharing
 4. **Advanced AI metrics**: Path efficiency, fuel efficiency scoring
 5. **Mobile support**: Touch controls for human players
+6. **Replay persistence**: Database storage instead of in-memory
 
 ### Long Term
 1. **Multiplayer racing**: Multiple landers on same terrain
@@ -365,6 +418,7 @@ The telemetry was designed to provide everything an AI needs without requiring c
 3. **AI training mode**: Provide training API for reinforcement learning
 4. **3D rendering**: Three.js for visual enhancement
 5. **Sound effects**: Engine sounds, crash/landing audio
+6. **Replay sharing**: Download/upload replays, share via URL
 
 ## Lessons Learned
 
@@ -374,13 +428,16 @@ The telemetry was designed to provide everything an AI needs without requiring c
 3. **Monorepo**: Easy to keep server/client in sync
 4. **Early testing**: Physics tests caught issues before integration
 5. **Incremental development**: Each task built on previous work
+6. **30Hz replay recording**: 62% size reduction with no visual impact
+7. **Value quantization**: Matched precision to display requirements
 
 ### What Could Be Improved
-1. **Terrain in replay**: Should have stored terrain data from the start
-2. **Type safety**: TypeScript for client would catch errors earlier
-3. **Configuration**: Game constants should be in config file
-4. **Database**: In-memory storage limits scalability
-5. **Testing**: Need integration tests for WebSocket communication
+1. **Type safety**: TypeScript for client would catch errors earlier
+2. **Configuration**: Game constants should be in config file
+3. **Database**: In-memory storage limits scalability
+4. **Testing**: Need integration tests for WebSocket communication
+5. **Error handling**: Need reconnection logic and better error messages
+6. **Compression**: Could add gzip for additional 70-80% reduction
 
 ### Key Takeaways
 1. **Real-time systems need careful async design**: Parallel tasks, not blocking
@@ -388,14 +445,17 @@ The telemetry was designed to provide everything an AI needs without requiring c
 3. **Control systems need hysteresis**: Prevent oscillation around thresholds
 4. **Late joiners need current state**: Not just future updates
 5. **AI development is iterative**: Start simple, add complexity as needed
+6. **Optimize data to match usage**: 30Hz is smooth enough, full precision unnecessary
+7. **Server-authoritative means trust server**: Don't recalculate on client
+8. **Scope matters**: Global vs local variables affect accessibility
 
 ## Project Statistics
 
-- **Development Time**: ~6 hours
-- **Lines of Code**: ~2,137 (24 files)
+- **Development Time**: ~8 hours
+- **Lines of Code**: ~2,500+ (26 files)
 - **Languages**: Python (server), JavaScript (client)
 - **Dependencies**: 6 Python packages, 0 JavaScript packages
-- **API Endpoints**: 4 REST, 2 WebSocket
+- **API Endpoints**: 5 REST, 2 WebSocket
 - **Game Modes**: 3 (Play, Spectate, Replay)
 - **Physics Update Rate**: 60Hz
 - **Telemetry Rate**: 60Hz
