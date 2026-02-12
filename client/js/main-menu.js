@@ -20,9 +20,15 @@ let animationFrameId = null;
 
 // Menu buttons
 document.getElementById('playBtn').addEventListener('click', () => {
+    console.log('Play button clicked');
     stopGameLoop();
     menuEl.classList.add('hidden');
     appEl.classList.remove('hidden');
+    // Force display
+    appEl.style.display = 'block';
+    menuEl.style.display = 'none';
+    console.log('Menu hidden:', menuEl.classList.contains('hidden'));
+    console.log('App visible:', !appEl.classList.contains('hidden'));
     currentMode = 'play';
     modeIndicatorEl.textContent = 'PLAYING';
     startGame();
