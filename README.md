@@ -1,69 +1,96 @@
-# Lunar Lander - AI/Human Game
+# 🚀 Lunar Lander
 
-A browser-based Lunar Lander game with WebSocket API for AI players, featuring real-time telemetry streaming, live spectator mode, and replay recording.
+A modern browser-based remake of the classic 1979 Atari Lunar Lander arcade game, featuring real-time multiplayer spectating, AI support, and competitive scoring.
 
-## Features
+![Menu Screenshot](docs/images/menu.png)
+![Gameplay Screenshot](docs/images/gameplay.png)
 
-### Core Gameplay
-- **Browser-based HTML5 Canvas** rendering at 60fps
-- **Server-authoritative physics** - Classic Atari Lunar Lander style
-- **Dual play modes**: Human (keyboard) and AI (WebSocket API)
-- **Real-time telemetry** at 60Hz for AI decision-making
-- **Three difficulty levels**: Simple, Intermediate, Advanced (terrain generation)
+## 🎮 Features
+
+### Three Difficulty Levels
+- **Easy**: Gentle terrain, more fuel - Perfect for learning
+- **Medium**: Moderate terrain, standard fuel - Balanced challenge  
+- **Hard**: Rough terrain, limited fuel - Expert mode
+
+### Competitive Scoring
+- **Base Score**: 1,000 points for successful landing
+- **Fuel Bonus**: Up to 500 points (conserve fuel!)
+- **Time Bonus**: Up to 300 points (land quickly!)
+- **Difficulty Multiplier**: 1x Easy, 1.5x Medium, 2x Hard
+- **Maximum Score**: 3,600 points (perfect landing on Hard)
 
 ### Game Modes
-- **Play Mode**: Human players control with keyboard
-- **Spectator Mode**: Watch live games in real-time with full telemetry
-- **Replay Mode**: Watch recorded games with accurate playback
+- **🎮 Play**: Control the lander with keyboard
+- **👁️ Spectate**: Watch live games in real-time
+- **📹 Replay**: Watch recorded games
 
-### Technical Features
-- **WebSocket communication** for real-time gameplay
-- **Replay recording** - All games automatically recorded with full state
-- **Live spectating** - Multiple spectators per game with real-time updates
-- **Color-coded HUD** - Green/red indicators for safe landing parameters
-- **Comprehensive telemetry** - Position, velocity, fuel, landing zones, altitude, speed
-- **Server-calculated metrics** - Accurate altitude and speed from server physics
+### Live Spectating
+- Watch other players in real-time
+- See spectator count in-game
+- Full telemetry and HUD display
+- Multiple spectators per game
 
-## Quick Start
+### AI Support
+- WebSocket API for AI clients
+- 60Hz real-time telemetry
+- Example AI included
+- Perfect for competitions
 
-### 1. Server Setup
+## 🚀 Quick Start
 
+### Play Locally
+
+**1. Start the server:**
 ```bash
 cd server
 python3 -m venv ../venv
-source ../venv/bin/activate  # On Windows: ..\venv\Scripts\activate
+source ../venv/bin/activate
 pip install -r requirements.txt
-uvicorn main:app --host 0.0.0.0 --port 8000
+uvicorn main:app --port 8000
 ```
 
-### 2. Client Setup
+**2. Start nginx (single-port deployment):**
+```bash
+sudo nginx
+```
+
+**3. Open your browser:**
+```
+http://localhost
+```
+
+### Deploy to Internet (ngrok)
 
 ```bash
-cd client
-python3 -m http.server 8080
+ngrok start lunarlander
 ```
 
-Open browser to **http://localhost:8080**
+Access via the ngrok URL - game works identically!
 
-## How to Play
+## 🎯 How to Play
 
-### Human Controls
-- **Arrow Up**: Thrust
-- **Arrow Left/Right**: Rotate
+### Controls
+- **↑ Arrow Up**: Thrust (main engine)
+- **← → Arrow Left/Right**: Rotate lander
 - **R**: Restart after game over
 - **ESC**: Return to menu
 
 ### Landing Requirements
-- **Speed**: < 5.0 m/s total velocity
-- **Angle**: < 17° from vertical
-- **Location**: Must land on green landing zones
+✅ **Speed**: < 5.0 m/s total velocity  
+✅ **Angle**: < 17° from vertical  
+✅ **Location**: Green landing zones only
 
-Watch the HUD - Speed and Angle indicators turn **GREEN** when safe to land!
+**Watch the HUD!** Speed and Angle indicators turn **GREEN** when safe to land.
 
-## AI Client
+### Strategy Tips
+1. **Conserve fuel** - Each 1% fuel = 5 points
+2. **Land quickly** - Every second after 20s costs 5 points
+3. **Play on Hard** - 2x multiplier doubles your score
+4. **Balance speed vs fuel** - Using thrust costs fuel but saves time
 
-### Running the Example AI
+## 🤖 AI Client
 
+### Run the Example AI
 ```bash
 cd examples
 python3 simple_ai.py
@@ -71,195 +98,116 @@ python3 simple_ai.py
 
 The AI will autonomously navigate and attempt to land.
 
-### WebSocket API
+### Build Your Own AI
+Connect to `ws://localhost:8000/ws` and receive 60Hz telemetry including:
+- Lander position, velocity, rotation, fuel
+- Terrain height and landing zones
+- Calculated altitude and speed
+- Nearest landing zone with distance/direction
 
-**Connect to game:**
-```
-ws://localhost:8000/ws
-```
+See [ARCHITECTURE.md](ARCHITECTURE.md) for full API documentation.
 
-**Start game:**
-```json
-{"type": "start", "difficulty": "simple"}
-```
+## 🏆 Scoring Examples
 
-**Receive telemetry (60Hz):**
-```json
-{
-  "type": "telemetry",
-  "timestamp": 1770868000.0,
-  "lander": {
-    "x": 600, "y": 300,
-    "vx": 0.5, "vy": 2.3,
-    "rotation": 0.1,
-    "fuel": 850,
-    "crashed": false,
-    "landed": false
-  },
-  "altitude": 400,
-  "speed": 2.35,
-  "terrain_height": 700,
-  "nearest_landing_zone": {
-    "x1": 450, "x2": 550,
-    "center_x": 500,
-    "y": 650,
-    "width": 100,
-    "distance": 100,
-    "direction": "left"
-  },
-  "all_landing_zones": [...]
-}
-```
+### Perfect Landing (Easy)
+- Land in 20s with full fuel
+- **Score: 1,800 points**
 
-**Send input:**
-```json
-{"type": "input", "action": "thrust"}
-{"type": "input", "action": "thrust_off"}
-{"type": "input", "action": "rotate_left"}
-{"type": "input", "action": "rotate_right"}
-{"type": "input", "action": "rotate_stop"}
-```
+### Perfect Landing (Hard)
+- Land in 20s with full fuel  
+- **Score: 3,600 points** 🎯
 
-**Game over:**
-```json
-{
-  "type": "game_over",
-  "landed": true,
-  "crashed": false,
-  "time": 143.0,
-  "fuel_remaining": 568,
-  "inputs": 216,
-  "replay_id": "session_id_timestamp"
-}
-```
+### Realistic Landing (Medium)
+- Land in 35s with 30% fuel
+- **Score: 2,062 points**
 
-## Spectator Mode
+### Crash
+- **Score: 0 points** 💥
 
-### List Active Games
-```bash
-curl http://localhost:8000/games
-```
+## 🔒 Security Features
 
-### Spectate via WebSocket
-```
-ws://localhost:8000/spectate/{session_id}
-```
+Built for hacker conferences with security in mind:
 
-Spectators receive the same telemetry as players in real-time.
+- ✅ **Server-authoritative physics** - No client-side cheating
+- ✅ **Rate limiting** - 30-60 requests/min per IP
+- ✅ **Input validation** - Whitelist of valid actions
+- ✅ **Connection limits** - 100 games, 100 spectators/game
+- ✅ **Session cleanup** - Auto-remove after 10min idle
+- ✅ **XSS protection** - No innerHTML usage
 
-### Browser UI
-1. Click "Spectate Live Game" from menu
-2. Select a game from the list
-3. Watch in real-time with full HUD
+See [SECURITY.md](SECURITY.md) for full details.
 
-## Replay System
+## 📊 Stats
 
-### List Replays
-```bash
-curl http://localhost:8000/replays
-```
+- **Lines of Code**: ~3,500 (Python: 1,800, JavaScript: 1,700)
+- **Automated Tests**: 57 passing (unit + integration + E2E)
+- **Test Coverage**: Core features covered
+- **Performance**: 60Hz physics, 60fps rendering, 30Hz spectator updates
 
-### Get Replay Data
-```bash
-curl http://localhost:8000/replay/{replay_id}
-```
+## 🛠️ Technology Stack
 
-All games are automatically recorded at 60Hz with full game state.
+**Backend:**
+- Python 3.14 + FastAPI
+- WebSocket for real-time communication
+- Server-authoritative physics at 60Hz
 
-## Project Structure
+**Frontend:**
+- HTML5 Canvas rendering
+- Vanilla JavaScript (no frameworks)
+- WebSocket client
 
-```
-lunarlander/
-├── server/
-│   ├── game/
-│   │   ├── physics.py       # Lander physics & collision
-│   │   ├── terrain.py       # Procedural terrain generation
-│   │   ├── session.py       # Game session management
-│   │   └── replay.py        # Replay recording
-│   ├── main.py              # FastAPI WebSocket server
-│   ├── firebase_config.py   # Firebase auth (optional)
-│   └── requirements.txt
-├── client/
-│   ├── js/
-│   │   ├── main-menu.js     # Menu & mode selection
-│   │   ├── renderer.js      # Canvas rendering
-│   │   ├── websocket.js     # WebSocket client
-│   │   ├── input.js         # Keyboard input
-│   │   └── replay.js        # Replay player
-│   ├── css/
-│   │   └── style.css
-│   └── index.html
-├── examples/
-│   └── simple_ai.py         # Example AI client
-└── README.md
-```
+**Deployment:**
+- nginx reverse proxy
+- ngrok for internet access
+- Single-port deployment (port 80)
 
-## Game Physics
+## 📚 Documentation
 
-- **Gravity**: 1.62 m/s² (lunar gravity)
-- **Thrust Power**: 5.0 m/s² acceleration
-- **Rotation Speed**: 3.0 rad/s
-- **Initial Fuel**: 1000 units
-- **Fuel Consumption**: 10 units/s when thrusting
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Technical details, API docs, project structure
+- [SECURITY.md](SECURITY.md) - Security features and testing
+- [SCORING.md](SCORING.md) - Detailed scoring system
+- [TESTING.md](TESTING.md) - Testing strategy and coverage
+- [NGROK.md](NGROK.md) - Deployment guide
 
-## API Endpoints
+## 🎯 Project Status
 
-### REST API
-- `GET /health` - Server health check
-- `GET /games` - List active game sessions
-- `GET /replays` - List all recorded replays
-- `GET /replay/{replay_id}` - Get specific replay data
+**Current Version**: 1.0 (Conference Ready)  
+**Completion**: 85%
 
-### WebSocket
-- `ws://localhost:8000/ws` - Play game
-- `ws://localhost:8000/spectate/{session_id}` - Spectate game
+### ✅ Completed
+- Core gameplay with physics
+- Scoring system
+- Difficulty selection
+- Live spectating
+- Replay system
+- Security hardening
+- 57 automated tests
+- nginx + ngrok deployment
 
-## Development Status
+### 🚧 Planned
+- Visual polish (particles, explosions)
+- Leaderboard system
+- Sound effects
+- Mobile touch controls
 
-### ✅ Completed (Tasks 1-6, 9-10)
-- Project setup and structure
-- Core physics engine
-- WebSocket server with 60Hz game loop
-- HTML5 Canvas renderer
-- Client WebSocket integration
-- Keyboard input handling
-- Replay recording system
-- Live spectator mode
-- Menu system with mode selection
+## 🤝 Contributing
 
-### 🚧 In Progress
-- Replay playback in browser (needs terrain storage)
-
-### 📋 Planned (Tasks 7-8, 12-13)
-- Scoring system (time/fuel/inputs based)
-- Firebase leaderboards (human vs AI categories)
-- Difficulty selection UI
-- Firebase authentication integration
-- Error handling and reconnection logic
-- User registration/login UI
-
-## Firebase Setup (Optional)
-
-To enable authentication and leaderboards:
-
-1. Create Firebase project at https://console.firebase.google.com
-2. Enable Authentication (Email/Password)
-3. Enable Realtime Database
-4. Download service account key → `server/firebase-credentials.json`
-5. Add Firebase web config to `client/js/firebase-config.js`
-
-## Contributing
-
-The game is designed to be extensible:
+Contributions welcome! The game is designed to be extensible:
 - Add new AI strategies in `examples/`
-- Modify physics constants in `server/game/physics.py`
-- Add new terrain generators in `server/game/terrain.py`
+- Modify physics in `server/game/physics.py`
+- Add terrain generators in `server/game/terrain.py`
 - Customize rendering in `client/js/renderer.js`
 
-## License
+## 📝 License
 
 MIT License - Feel free to use and modify!
 
-## Credits
+## 🎮 Credits
 
 Inspired by the classic 1979 Atari Lunar Lander arcade game.
+
+Built with ❤️ for hacker conferences and AI competitions.
+
+---
+
+**Ready to play?** Start the server and visit http://localhost 🚀
