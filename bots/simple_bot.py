@@ -7,12 +7,16 @@ import asyncio
 import websockets
 import json
 import sys
+from datetime import datetime
 
 class SimpleBot:
-    def __init__(self, ws_url="ws://localhost:8000/ws", difficulty="simple"):
+    def __init__(self, ws_url="ws://localhost:8000/ws", difficulty="simple", log_file=None):
         self.ws_url = ws_url
         self.difficulty = difficulty
         self.ws = None
+        self.log_file = log_file or f"bot_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jsonl"
+        self.frame_count = 0
+        print(f"📝 Logging to: {self.log_file}")
         
     async def connect(self):
         self.ws = await websockets.connect(self.ws_url)
@@ -87,6 +91,25 @@ class SimpleBot:
         
         return [thrust_action, rotate_action]
     
+    def log_frame(self, telemetry, actions, reason=""):
+        """Log frame data for post-mortem analysis"""
+        self.frame_count += 1
+        log_entry = {
+            "frame": self.frame_count,
+            "altitude": telemetry["altitude"],
+            "speed": telemetry["speed"],
+            "vx": telemetry.get("horizontal_speed", 0),
+            "vy": telemetry.get("vertical_speed", 0),
+            "angle": telemetry.get("angle_degrees", 0),
+            "fuel": telemetry["lander"]["fuel"],
+            "x": telemetry["lander"]["x"],
+            "zone_x": telemetry.get("nearest_landing_zone", {}).get("center_x", 0),
+            "actions": actions,
+            "reason": reason
+        }
+        with open(self.log_file, "a") as f:
+            f.write(json.dumps(log_entry) + "\n")
+    
     async def play(self):
         await self.connect()
         await self.start_game()
@@ -99,10 +122,18 @@ class SimpleBot:
                     print(f"✓ Game initialized")
                     
                 elif data["type"] == "telemetry":
-                    if data["lander"]["crashed"] or data["lander"]["landed"]:
+                    if data["lander"]["crashed"]:
+                        self.log_frame(data, [], "CRASHED")
+                        print(f"💥 Crashed at frame {self.frame_count}")
+                        continue
+                    if data["lander"]["landed"]:
+                        self.log_frame(data, [], "LANDED")
+                        print(f"✓ Landed at frame {self.frame_count}")
                         continue
                     
                     actions = self.decide_action(data)
+                    self.log_frame(data, actions)
+                    
                     for action in actions:
                         await self.ws.send(json.dumps({
                             "type": "input",
@@ -114,8 +145,10 @@ class SimpleBot:
                     landed = data.get("landed", False)
                     if landed:
                         print(f"✓ LANDED! Score: {score}")
+                        print(f"📝 Log saved: {self.log_file}")
                     else:
                         print(f"✗ CRASHED! Score: {score}")
+                        print(f"📝 Log saved: {self.log_file}")
                     break
                     
         except websockets.exceptions.ConnectionClosed:
