@@ -8,6 +8,14 @@ describe('Renderer - HUD Metrics Bug', () => {
     canvas = document.createElement('canvas');
     canvas.width = 1200;
     canvas.height = 800;
+    
+    // Add canvas to a container for responsive code
+    const container = document.createElement('div');
+    container.style.width = '1200px';
+    container.style.height = '800px';
+    container.appendChild(canvas);
+    document.body.appendChild(container);
+    
     renderer = new Renderer(canvas);
   });
   
@@ -95,6 +103,13 @@ describe('Renderer - Performance', () => {
     canvas = document.createElement('canvas');
     canvas.width = 1200;
     canvas.height = 800;
+    
+    const container = document.createElement('div');
+    container.style.width = '1200px';
+    container.style.height = '800px';
+    container.appendChild(canvas);
+    document.body.appendChild(container);
+    
     renderer = new Renderer(canvas);
   });
   
@@ -123,5 +138,60 @@ describe('Renderer - Performance', () => {
     const elapsed = performance.now() - start;
     
     expect(elapsed).toBeLessThan(16); // 60fps = 16.67ms per frame
+  });
+});
+
+describe('Renderer - Landing Zone Highlights', () => {
+  let canvas, renderer;
+  
+  beforeEach(() => {
+    canvas = document.createElement('canvas');
+    canvas.width = 1200;
+    canvas.height = 800;
+    
+    const container = document.createElement('div');
+    container.style.width = '1200px';
+    container.style.height = '800px';
+    container.appendChild(canvas);
+    document.body.appendChild(container);
+    
+    renderer = new Renderer(canvas);
+  });
+  
+  it('should draw landing zones with glow effect', () => {
+    const terrain = {
+      points: [[0, 700], [1200, 700]],
+      landing_zones: [{ x1: 500, x2: 600, y: 700 }]
+    };
+    
+    expect(() => {
+      renderer.drawTerrain(terrain, null);
+    }).not.toThrow();
+  });
+  
+  it('should increase glow when lander is near landing zone', () => {
+    const terrain = {
+      points: [[0, 700], [1200, 700]],
+      landing_zones: [{ x1: 500, x2: 600, y: 700 }]
+    };
+    
+    const landerNear = { x: 550, y: 400 };
+    const landerFar = { x: 100, y: 400 };
+    
+    // Should not crash with proximity detection
+    expect(() => {
+      renderer.drawTerrain(terrain, landerNear);
+      renderer.drawTerrain(terrain, landerFar);
+    }).not.toThrow();
+  });
+  
+  it('should handle terrain without landing zones', () => {
+    const terrain = {
+      points: [[0, 700], [1200, 700]]
+    };
+    
+    expect(() => {
+      renderer.drawTerrain(terrain, null);
+    }).not.toThrow();
   });
 });

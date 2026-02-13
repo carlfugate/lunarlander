@@ -31,7 +31,7 @@ export class Renderer {
         this.ctx.fillRect(0, 0, this.width, this.height);
     }
     
-    drawTerrain(terrain) {
+    drawTerrain(terrain, lander) {
         if (!terrain || !terrain.points) return;
         
         this.ctx.strokeStyle = '#888';
@@ -50,15 +50,28 @@ export class Renderer {
         
         this.ctx.stroke();
         
-        // Draw landing zones
+        // Draw landing zones with glow
         if (terrain.landing_zones) {
-            this.ctx.strokeStyle = '#0f0';
-            this.ctx.lineWidth = 3;
+            const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 500);
+            
             terrain.landing_zones.forEach(zone => {
+                const zoneX = (zone.x1 + zone.x2) / 2;
+                const distance = lander ? Math.abs(lander.x - zoneX) : 1000;
+                const proximity = Math.max(0, 1 - distance / 500);
+                const alpha = 0.3 + 0.4 * pulse + 0.3 * proximity;
+                
+                // Glow effect
+                this.ctx.shadowBlur = 15;
+                this.ctx.shadowColor = `rgba(0, 255, 0, ${alpha})`;
+                this.ctx.strokeStyle = `rgba(0, 255, 0, ${alpha})`;
+                this.ctx.lineWidth = 4;
+                
                 this.ctx.beginPath();
                 this.ctx.moveTo(zone.x1 - this.camera.x, zone.y - this.camera.y);
                 this.ctx.lineTo(zone.x2 - this.camera.x, zone.y - this.camera.y);
                 this.ctx.stroke();
+                
+                this.ctx.shadowBlur = 0;
             });
         }
     }
@@ -166,7 +179,7 @@ export class Renderer {
             this.updateCamera(gameState.lander);
         }
         
-        this.drawTerrain(gameState.terrain);
+        this.drawTerrain(gameState.terrain, gameState.lander);
         this.drawLander(gameState.lander, thrusting);
         this.drawHUD(gameState.lander, gameState.altitude, gameState.speed, gameState.spectatorCount);
     }
