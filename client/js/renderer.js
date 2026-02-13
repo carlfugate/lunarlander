@@ -117,12 +117,12 @@ export class Renderer {
             for (let i = 0; i < 3; i++) {
                 const spread = (Math.random() - 0.5) * 0.3;
                 const speed = 2 + Math.random() * 2;
-                // Particles follow craft axis (perpendicular to bottom)
+                // Particles follow craft axis (away from nose, through bottom)
                 this.particles.push({
                     x: lander.x,
                     y: lander.y,
-                    vx: Math.sin(lander.rotation) * speed + spread,
-                    vy: Math.cos(lander.rotation) * speed,
+                    vx: -Math.sin(lander.rotation) * speed + spread,
+                    vy: -Math.cos(lander.rotation) * speed,
                     life: 0.3,
                     maxLife: 0.3,
                     isExplosion: false
