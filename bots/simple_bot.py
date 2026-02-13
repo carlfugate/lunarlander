@@ -45,6 +45,17 @@ class SimpleBot:
         
         x_error = zone['center_x'] - lander['x']
         
+        # PRIORITY 0: Wall avoidance (critical!)
+        WALL_MARGIN = 50  # Stay 50px from walls
+        terrain_width = 800  # Game width
+        
+        if lander['x'] < WALL_MARGIN and horizontal_speed < 0:
+            # Too close to left wall, moving left
+            return ["thrust_on", "rotate_right"]
+        elif lander['x'] > terrain_width - WALL_MARGIN and horizontal_speed > 0:
+            # Too close to right wall, moving right
+            return ["thrust_on", "rotate_left"]
+        
         # Rotation control
         target_angle = 0
         
