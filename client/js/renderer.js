@@ -117,11 +117,12 @@ export class Renderer {
             for (let i = 0; i < 3; i++) {
                 const spread = (Math.random() - 0.5) * 0.3;
                 const speed = 2 + Math.random() * 2;
+                // Particles go opposite of thrust direction (downward from bottom)
                 this.particles.push({
                     x: lander.x,
                     y: lander.y,
-                    vx: Math.sin(lander.rotation + spread) * speed,
-                    vy: Math.cos(lander.rotation + spread) * speed,
+                    vx: -Math.sin(lander.rotation + spread) * speed,
+                    vy: -Math.cos(lander.rotation + spread) * speed,
                     life: 0.3,
                     maxLife: 0.3,
                     isExplosion: false

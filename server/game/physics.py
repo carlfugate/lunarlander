@@ -50,14 +50,19 @@ class Lander:
         self.y += self.vy * dt
         
     def check_collision(self, terrain_y, is_landing_zone=False):
-        if self.y >= terrain_y:
+        # Check collision for nose (top of triangle at -30 in local coords)
+        nose_x = self.x
+        nose_y = self.y - 30 * math.cos(self.rotation)
+        
+        # Check collision for bottom or nose
+        if self.y >= terrain_y or nose_y >= terrain_y:
             speed = math.sqrt(self.vx**2 + self.vy**2)
             angle_upright = abs(self.rotation) < 0.3  # ~17 degrees
             angle_degrees = abs(self.rotation) * 180 / math.pi
             
             import time
             timestamp = time.time()
-            print(f"[{timestamp:.3f}] COLLISION: lander_y={self.y:.2f}, terrain_y={terrain_y:.2f}, speed={speed:.2f}, angle={angle_degrees:.1f}°, upright={angle_upright}, landing_zone={is_landing_zone}")
+            print(f"[{timestamp:.3f}] COLLISION: lander_y={self.y:.2f}, nose_y={nose_y:.2f}, terrain_y={terrain_y:.2f}, speed={speed:.2f}, angle={angle_degrees:.1f}°, upright={angle_upright}, landing_zone={is_landing_zone}")
             
             if is_landing_zone and angle_upright and speed < 5.0:  # Increased from 2.0 to 5.0
                 self.landed = True
