@@ -119,9 +119,16 @@ export class Renderer {
         const angle = Math.abs(lander.rotation);
         const angleDegrees = (angle * 180 / Math.PI).toFixed(1);
         
+        // Flash effect for critical warnings (2Hz)
+        const flash = Math.floor(Date.now() / 250) % 2 === 0;
+        
         // Enhanced color coding with yellow warning zone
-        const fuelColor = lander.fuel > 300 ? '#0f0' : lander.fuel > 100 ? '#ff0' : '#f00';
-        const speedColor = displaySpeed < 3.0 ? '#0f0' : displaySpeed < 5.0 ? '#ff0' : '#f00';
+        const lowFuel = lander.fuel < 200;
+        const fuelColor = lander.fuel > 300 ? '#0f0' : lander.fuel > 100 ? '#ff0' : (flash ? '#f00' : '#800');
+        
+        const highSpeed = displaySpeed > 5.0;
+        const speedColor = displaySpeed < 3.0 ? '#0f0' : displaySpeed < 5.0 ? '#ff0' : (flash ? '#f00' : '#800');
+        
         const angleColor = angle < 0.2 ? '#0f0' : angle < 0.3 ? '#ff0' : '#f00';
         
         const hud = [
@@ -150,6 +157,26 @@ export class Renderer {
             // Text
             this.ctx.fillStyle = item.color;
             this.ctx.fillText(fullText, x, y);
+        });
+        
+        // Warning messages (center screen)
+        this.ctx.font = 'bold 32px monospace';
+        const warnings = [];
+        if (lowFuel && flash) warnings.push('⚠ LOW FUEL ⚠');
+        if (highSpeed && flash) warnings.push('⚠ TOO FAST ⚠');
+        
+        warnings.forEach((warning, i) => {
+            const metrics = this.ctx.measureText(warning);
+            const x = (this.width - metrics.width) / 2;
+            const y = this.height / 2 - 100 + i * 50;
+            
+            // Background
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            this.ctx.fillRect(x - 10, y - 28, metrics.width + 20, 40);
+            
+            // Text
+            this.ctx.fillStyle = '#f00';
+            this.ctx.fillText(warning, x, y);
         });
         
         // Spectator count (top right)
