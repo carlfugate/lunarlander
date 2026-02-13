@@ -1,6 +1,7 @@
 export class InputHandler {
-    constructor(wsClient) {
+    constructor(wsClient, getPauseState) {
         this.wsClient = wsClient;
+        this.getPauseState = getPauseState;
         this.keys = {};
         this.thrusting = false;
         this.rotating = null;
@@ -14,6 +15,7 @@ export class InputHandler {
     }
     
     handleKeyDown(e) {
+        if (this.getPauseState && this.getPauseState()) return; // Ignore input when paused
         if (this.keys[e.key]) return; // Already pressed
         this.keys[e.key] = true;
         
@@ -37,6 +39,7 @@ export class InputHandler {
     }
     
     handleKeyUp(e) {
+        if (this.getPauseState && this.getPauseState()) return; // Ignore input when paused
         this.keys[e.key] = false;
         
         switch (e.key) {

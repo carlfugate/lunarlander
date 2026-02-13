@@ -18,6 +18,7 @@ let currentMode = null;
 let wsClient = null;
 let animationFrameId = null;
 let selectedDifficulty = 'simple';
+let isPaused = false;
 
 // Menu buttons
 document.getElementById('playBtn').addEventListener('click', () => {
@@ -338,7 +339,7 @@ async function startGame(difficulty = 'simple') {
         
         await wsClient.connect();
         wsClient.startGame(difficulty);
-        inputHandler = new InputHandler(wsClient);
+        inputHandler = new InputHandler(wsClient, () => isPaused);
         statusEl.classList.remove('visible');
     } catch (error) {
         statusEl.textContent = 'Failed to connect';
@@ -352,22 +353,25 @@ let frameCount = 0;
 
 function gameLoop(timestamp) {
     try {
-        const thrusting = gameState.thrusting || (inputHandler ? inputHandler.isThrusting() : false);
-        
-        // Always render if there are particles or explosion (they animate)
-        const hasAnimation = renderer.particles.length > 0 || renderer.explosion;
-        
-        // Only render if state changed OR animation is active
-        const currentState = JSON.stringify({
-            lander: gameState.lander,
-            thrusting: thrusting,
-            altitude: gameState.altitude,
-            speed: gameState.speed
-        });
-        
-        if (currentState !== lastRenderState || hasAnimation) {
-            renderer.render(gameState, thrusting);
-            lastRenderState = currentState;
+        // Skip rendering if paused (but keep loop running)
+        if (!isPaused) {
+            const thrusting = gameState.thrusting || (inputHandler ? inputHandler.isThrusting() : false);
+            
+            // Always render if there are particles or explosion (they animate)
+            const hasAnimation = renderer.particles.length > 0 || renderer.explosion;
+            
+            // Only render if state changed OR animation is active
+            const currentState = JSON.stringify({
+                lander: gameState.lander,
+                thrusting: thrusting,
+                altitude: gameState.altitude,
+                speed: gameState.speed
+            });
+            
+            if (currentState !== lastRenderState || hasAnimation) {
+                renderer.render(gameState, thrusting);
+                lastRenderState = currentState;
+            }
         }
     } catch (e) {
         console.error("Error in game loop:", e);
@@ -393,6 +397,18 @@ function startGameLoop() {
 }
 
 document.addEventListener('keydown', (e) => {
+    if (e.key === 'p' || e.key === 'P') {
+        // Only allow pause in play mode (not spectate or replay)
+        if (currentMode === 'play' && gameState.lander && !gameState.lander.crashed && !gameState.lander.landed) {
+            isPaused = !isPaused;
+            const pauseOverlay = document.getElementById('pauseOverlay');
+            if (isPaused) {
+                pauseOverlay.classList.remove('hidden');
+            } else {
+                pauseOverlay.classList.add('hidden');
+            }
+        }
+    }
     if (e.key === 'r' || e.key === 'R') {
         if (!gameActive && currentMode === 'play') {
             if (wsClient) wsClient.close();
@@ -400,6 +416,12 @@ document.addEventListener('keydown', (e) => {
         }
     }
     if (e.key === 'Escape') {
+        // Unpause if paused
+        if (isPaused) {
+            isPaused = false;
+            document.getElementById('pauseOverlay').classList.add('hidden');
+        }
+        
         stopGameLoop();
         if (wsClient) wsClient.close();
         if (inputHandler) {
