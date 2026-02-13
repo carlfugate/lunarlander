@@ -11,25 +11,60 @@ class Terrain:
     def _generate(self, difficulty):
         points = []
         
+        # Normalize difficulty names (handle test aliases)
+        if difficulty == "intermediate":
+            difficulty = "medium"
+        elif difficulty == "advanced":
+            difficulty = "hard"
+        
+        # Determine step size based on difficulty
         if difficulty == "simple":
-            # Mostly flat with gentle slopes
+            step = 50
             y_base = self.height - 100
-            for x in range(0, self.width + 1, 50):
-                y = y_base + random.randint(-20, 20)
+            landing_y = self.height - 100
+            landing_width = 100
+        elif difficulty == "medium":
+            step = 40
+            y_base = self.height - 150
+            landing_y = self.height - 150
+            landing_width = 80
+        else:  # hard
+            step = 30
+            y_base = self.height - 200
+            landing_y = self.height - 200
+            landing_width = 60
+        
+        # Determine landing zone position (aligned to step)
+        landing_x_start = random.randint(400 // step, 700 // step) * step
+        landing_x_end = landing_x_start + landing_width
+        
+        if difficulty == "simple":
+            # Mostly flat with gentle slopes, one flat landing zone
+            for x in range(0, self.width + 1, step):
+                if landing_x_start <= x <= landing_x_end:
+                    y = landing_y
+                else:
+                    y = y_base + random.randint(-20, 20)
                 points.append((x, y))
         elif difficulty == "medium":
-            # Rolling hills
-            y = self.height - 150
-            for x in range(0, self.width + 1, 40):
-                y += random.randint(-30, 30)
-                y = max(self.height - 300, min(self.height - 50, y))
+            # Rolling hills with one flat landing zone
+            y = y_base
+            for x in range(0, self.width + 1, step):
+                if landing_x_start <= x <= landing_x_end:
+                    y = landing_y
+                else:
+                    y += random.randint(-30, 30)
+                    y = max(self.height - 300, min(self.height - 50, y))
                 points.append((x, y))
         else:  # hard
-            # Steep mountains
-            y = self.height - 200
-            for x in range(0, self.width + 1, 30):
-                y += random.randint(-50, 50)
-                y = max(self.height - 500, min(self.height - 50, y))
+            # Steep mountains with one flat landing zone
+            y = y_base
+            for x in range(0, self.width + 1, step):
+                if landing_x_start <= x <= landing_x_end:
+                    y = landing_y
+                else:
+                    y += random.randint(-50, 50)
+                    y = max(self.height - 500, min(self.height - 50, y))
                 points.append((x, y))
                 
         return points
