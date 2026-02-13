@@ -77,10 +77,11 @@ export class WebSocketClient {
         }
     }
     
-    startGame(difficulty = 'simple', token = null) {
+    startGame(difficulty = 'simple', token = null, telemetryMode = 'standard') {
         const message = {
             type: 'start',
-            difficulty: difficulty
+            difficulty: difficulty,
+            telemetry_mode: telemetryMode
         };
         if (token) {
             message.token = token;

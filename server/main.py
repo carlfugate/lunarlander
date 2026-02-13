@@ -226,12 +226,17 @@ async def websocket_endpoint(websocket: WebSocket):
         
         if message.get("type") == "start":
             difficulty = message.get("difficulty", "simple")
+            telemetry_mode = message.get("telemetry_mode", "standard")
             
             # Validate difficulty
             if difficulty not in ["simple", "medium", "hard"]:
                 difficulty = "simple"
             
-            session = GameSession(session_id, websocket, difficulty)
+            # Validate telemetry mode
+            if telemetry_mode not in ["standard", "advanced"]:
+                telemetry_mode = "standard"
+            
+            session = GameSession(session_id, websocket, difficulty, telemetry_mode)
             session.user_id = user_id
             sessions[session_id] = session
             

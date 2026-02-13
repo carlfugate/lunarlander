@@ -6,10 +6,11 @@ from game.terrain import Terrain
 from game.replay import ReplayRecorder
 
 class GameSession:
-    def __init__(self, session_id, websocket, difficulty="simple"):
+    def __init__(self, session_id, websocket, difficulty="simple", telemetry_mode="standard"):
         self.session_id = session_id
         self.websocket = websocket
         self.difficulty = difficulty
+        self.telemetry_mode = telemetry_mode  # "standard" or "advanced"
         self.lander = Lander()
         self.terrain = Terrain(difficulty=difficulty)
         self.running = False
@@ -117,42 +118,7 @@ class GameSession:
         import math
         speed = math.sqrt(self.lander.vx**2 + self.lander.vy**2)
         
-        # Calculate elapsed time
-        elapsed_time = time.time() - self.start_time
-        
-        # Calculate angle in degrees
-        angle_degrees = abs(self.lander.rotation) * 180 / math.pi
-        
-        # Safety checks
-        is_safe_speed = speed < 5.0
-        is_safe_angle = angle_degrees < 17.0
-        
-        # Check if over landing zone
-        is_over_landing_zone = False
-        landing_zone_center_x = None
-        if nearest_zone:
-            zone = nearest_zone
-            is_over_landing_zone = zone['x1'] <= self.lander.x <= zone['x2']
-            landing_zone_center_x = zone['center_x']
-        
-        # Estimate score if landed now
-        estimated_score = 0
-        if is_safe_speed and is_safe_angle and is_over_landing_zone:
-            estimated_score = self.calculate_score(elapsed_time)
-        
-        # Predict time to ground (simple physics, no thrust)
-        time_to_ground = None
-        impact_speed = None
-        if self.lander.vy > 0 and altitude_above_terrain > 0:
-            # Using kinematic equation: d = v*t + 0.5*a*t^2
-            a = 1.62  # lunar gravity
-            v = self.lander.vy
-            d = altitude_above_terrain
-            discriminant = v*v + 2*a*d
-            if discriminant >= 0:
-                time_to_ground = (-v + math.sqrt(discriminant)) / a
-                impact_speed = v + a * time_to_ground
-        
+        # Standard telemetry (always included)
         message = {
             "type": "telemetry",
             "timestamp": time.time(),
@@ -161,32 +127,59 @@ class GameSession:
             "altitude": altitude_above_terrain,
             "speed": speed,
             "thrusting": self.current_thrust,
-            
-            # Landing zone info
             "nearest_landing_zone": nearest_zone,
             "all_landing_zones": self.terrain.landing_zones,
-            "is_over_landing_zone": is_over_landing_zone,
-            "landing_zone_center_x": landing_zone_center_x,
-            
-            # Safety metrics
-            "is_safe_speed": is_safe_speed,
-            "is_safe_angle": is_safe_angle,
-            "angle_degrees": angle_degrees,
-            "vertical_speed": self.lander.vy,
-            "horizontal_speed": self.lander.vx,
-            
-            # Scoring info
-            "elapsed_time": elapsed_time,
-            "fuel_remaining_percent": self.lander.fuel / 1000.0,
-            "estimated_score": estimated_score,
-            "max_possible_score": int(1800 * (2.0 if self.difficulty == "hard" else 1.5 if self.difficulty == "medium" else 1.0)),
-            
-            # Trajectory prediction
-            "time_to_ground": time_to_ground,
-            "impact_speed": impact_speed,
-            
             "spectator_count": len(self.spectators)
         }
+        
+        # Advanced telemetry (only for AI clients)
+        if self.telemetry_mode == "advanced":
+            elapsed_time = time.time() - self.start_time
+            angle_degrees = abs(self.lander.rotation) * 180 / math.pi
+            is_safe_speed = speed < 5.0
+            is_safe_angle = angle_degrees < 17.0
+            
+            # Check if over landing zone
+            is_over_landing_zone = False
+            landing_zone_center_x = None
+            if nearest_zone:
+                zone = nearest_zone
+                is_over_landing_zone = zone['x1'] <= self.lander.x <= zone['x2']
+                landing_zone_center_x = zone['center_x']
+            
+            # Estimate score if landed now
+            estimated_score = 0
+            if is_safe_speed and is_safe_angle and is_over_landing_zone:
+                estimated_score = self.calculate_score(elapsed_time)
+            
+            # Predict time to ground (simple physics, no thrust)
+            time_to_ground = None
+            impact_speed = None
+            if self.lander.vy > 0 and altitude_above_terrain > 0:
+                a = 1.62  # lunar gravity
+                v = self.lander.vy
+                d = altitude_above_terrain
+                discriminant = v*v + 2*a*d
+                if discriminant >= 0:
+                    time_to_ground = (-v + math.sqrt(discriminant)) / a
+                    impact_speed = v + a * time_to_ground
+            
+            # Add advanced fields
+            message.update({
+                "is_over_landing_zone": is_over_landing_zone,
+                "landing_zone_center_x": landing_zone_center_x,
+                "is_safe_speed": is_safe_speed,
+                "is_safe_angle": is_safe_angle,
+                "angle_degrees": angle_degrees,
+                "vertical_speed": self.lander.vy,
+                "horizontal_speed": self.lander.vx,
+                "elapsed_time": elapsed_time,
+                "fuel_remaining_percent": self.lander.fuel / 1000.0,
+                "estimated_score": estimated_score,
+                "max_possible_score": int(1800 * (2.0 if self.difficulty == "hard" else 1.5 if self.difficulty == "medium" else 1.0)),
+                "time_to_ground": time_to_ground,
+                "impact_speed": impact_speed
+            })
         
         # Send to player (always 60Hz)
         await self.websocket.send_text(json.dumps(message))
