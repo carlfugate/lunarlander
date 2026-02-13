@@ -49,28 +49,21 @@ class OllamaBot:
         zone = telemetry.get("nearest_landing_zone")
         
         if not zone:
-            return "No landing zone found. Return: [\"thrust_off\", \"rotate_stop\"]"
+            return "No zone. Reply: [\"thrust_off\", \"rotate_stop\"]"
         
         x_error = zone['center_x'] - lander['x']
+        alt = telemetry['altitude']
+        speed = telemetry['speed']
+        vx = telemetry.get('horizontal_speed', 0)
+        vy = telemetry.get('vertical_speed', 0)
+        angle = telemetry.get('angle_degrees', 0)
         
-        prompt = f"""Lunar lander pilot. Decide thrust and rotation.
+        prompt = f"""Lander: Alt={alt:.0f}m Speed={speed:.1f} Vx={vx:.1f} Vy={vy:.1f} Angle={angle:.0f}° Fuel={lander['fuel']:.0f} XErr={x_error:.0f}m
 
-STATE:
-Alt: {telemetry['altitude']:.0f}m | Speed: {telemetry['speed']:.1f} m/s (SAFE<5.0)
-Vx: {telemetry.get('horizontal_speed', 0):.1f} | Vy: {telemetry.get('vertical_speed', 0):.1f} (down=+)
-Angle: {telemetry.get('angle_degrees', 0):.1f}° (SAFE<17°) | Fuel: {lander['fuel']:.0f}
-X-error: {x_error:.0f}m (to landing zone center)
-Over zone: {telemetry.get('is_over_landing_zone', False)}
+Safe: Speed<5, Angle<17°
+Strategy: High(>300m)→fall. Med(150-300)→thrust if Vy>5. Low(<150)→thrust if Speed>4. OffTarget→tilt.
 
-STRATEGY:
-1. If low (<100m) & off-target (>20m): tilt toward zone, hover
-2. If fast horizontal (>3 m/s) & low (<200m): tilt opposite to brake
-3. If high (>300m): let fall, thrust if Vy>7
-4. If medium (150-300m): thrust if Vy>5
-5. If low (<150m): thrust if Speed>4 or Vy>2.5
-
-CONTROLS: ["thrust_on"/"thrust_off", "rotate_left"/"rotate_right"/"rotate_stop"]
-RESPOND JSON ONLY:
+Reply JSON array only: ["thrust_on"/"thrust_off", "rotate_left"/"rotate_right"/"rotate_stop"]
 """
         return prompt
     
@@ -84,11 +77,11 @@ RESPOND JSON ONLY:
                     "prompt": prompt,
                     "stream": False,
                     "options": {
-                        "temperature": 0.3,  # Lower = more deterministic
-                        "num_predict": 50    # Short response
+                        "temperature": 0.2,
+                        "num_predict": 30
                     }
                 },
-                timeout=2.0  # 2 second timeout
+                timeout=3.0  # 2 second timeout
             )
             
             if response.status_code == 200:
