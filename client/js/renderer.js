@@ -7,6 +7,7 @@ export class Renderer {
         this.camera = { x: 0, y: 0 };
         this.particles = [];
         this.explosion = null;
+        this.hasExploded = false;
         
         // Make canvas responsive
         this.setupResponsive();
@@ -86,14 +87,16 @@ export class Renderer {
             console.log('Lander state:', { crashed: lander.crashed, landed: lander.landed, hasExplosion: !!this.explosion });
         }
         
-        // Trigger explosion on crash (only once)
-        if (lander.crashed && !this.explosion) {
+        // Trigger explosion on crash (only once per game)
+        if (lander.crashed && !this.hasExploded) {
             console.log('💥 EXPLOSION TRIGGERED!', lander);
+            this.hasExploded = true;
             this.explosion = {
                 x: lander.x,
                 y: lander.y,
                 time: 0,
-                duration: 1.5
+                duration: 1.5,
+                triggered: true  // Mark as triggered
             };
             
             // Create explosion particles
@@ -357,6 +360,7 @@ export class Renderer {
     reset() {
         this.particles = [];
         this.explosion = null;
+        this.hasExploded = false;
     }
     
     render(gameState, thrusting) {
