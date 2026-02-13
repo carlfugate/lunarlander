@@ -73,6 +73,8 @@ class GameSession:
             
             # Check game over
             if self.lander.crashed or self.lander.landed:
+                # Send final telemetry with crashed/landed state
+                await self.send_telemetry(send_to_spectators=True)
                 await self.send_game_over()
                 self.running = False
                 break
