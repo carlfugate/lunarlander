@@ -82,7 +82,8 @@ export class Renderer {
         if (!lander) return;
         
         // Trigger explosion on crash (only once)
-        if (lander.crashed && !this.explosion && !lander.landed) {
+        if (lander.crashed && !this.explosion) {
+            console.log('💥 EXPLOSION TRIGGERED!', lander);
             this.explosion = {
                 x: lander.x,
                 y: lander.y,
