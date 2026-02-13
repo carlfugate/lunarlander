@@ -36,31 +36,31 @@ class OllamaBot:
     def create_prompt(self, telemetry):
         """Create a concise prompt for the LLM"""
         lander = telemetry["lander"]
+        zone = telemetry.get("nearest_landing_zone")
         
-        prompt = f"""You are piloting a lunar lander. Analyze the situation and decide actions.
+        if not zone:
+            return "No landing zone found. Return: [\"thrust_off\", \"rotate_stop\"]"
+        
+        x_error = zone['center_x'] - lander['x']
+        
+        prompt = f"""Lunar lander pilot. Decide thrust and rotation.
 
-CURRENT STATE:
-- Position: x={lander['x']:.0f}, y={lander['y']:.0f}
-- Altitude: {telemetry['altitude']:.1f}m above ground
-- Speed: {telemetry['speed']:.1f} m/s (SAFE: <5.0)
-- Vertical speed: {telemetry.get('vertical_speed', 0):.1f} m/s (down is positive)
-- Horizontal speed: {telemetry.get('horizontal_speed', 0):.1f} m/s
-- Angle: {telemetry.get('angle_degrees', 0):.1f}° (SAFE: <17°)
-- Fuel: {lander['fuel']:.0f}/1000 ({telemetry.get('fuel_remaining_percent', 0)*100:.0f}%)
-- Over landing zone: {telemetry.get('is_over_landing_zone', False)}
-- Landing zone center: x={telemetry.get('landing_zone_center_x', 0):.0f}
-- Safe to land: speed={telemetry.get('is_safe_speed', False)}, angle={telemetry.get('is_safe_angle', False)}
+STATE:
+Alt: {telemetry['altitude']:.0f}m | Speed: {telemetry['speed']:.1f} m/s (SAFE<5.0)
+Vx: {telemetry.get('horizontal_speed', 0):.1f} | Vy: {telemetry.get('vertical_speed', 0):.1f} (down=+)
+Angle: {telemetry.get('angle_degrees', 0):.1f}° (SAFE<17°) | Fuel: {lander['fuel']:.0f}
+X-error: {x_error:.0f}m (to landing zone center)
+Over zone: {telemetry.get('is_over_landing_zone', False)}
 
-SCORING:
-- Estimated score if landed now: {telemetry.get('estimated_score', 0)}
-- Max possible: {telemetry.get('max_possible_score', 0)}
+STRATEGY:
+1. If low (<100m) & off-target (>20m): tilt toward zone, hover
+2. If fast horizontal (>3 m/s) & low (<200m): tilt opposite to brake
+3. If high (>300m): let fall, thrust if Vy>7
+4. If medium (150-300m): thrust if Vy>5
+5. If low (<150m): thrust if Speed>4 or Vy>2.5
 
-CONTROLS:
-- thrust_on / thrust_off: Fire thruster (pushes up, uses fuel)
-- rotate_left / rotate_right / rotate_stop: Rotate craft
-
-RESPOND WITH ONLY A JSON ARRAY OF ACTIONS, NO EXPLANATION:
-Example: ["thrust_on", "rotate_stop"]
+CONTROLS: ["thrust_on"/"thrust_off", "rotate_left"/"rotate_right"/"rotate_stop"]
+RESPOND JSON ONLY:
 """
         return prompt
     

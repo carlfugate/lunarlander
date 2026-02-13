@@ -28,45 +28,64 @@ class SimpleBot:
         print(f"✓ Started game (difficulty: {self.difficulty}, mode: bot)")
         
     def decide_action(self, telemetry):
-        """Simple rule-based decision making"""
+        """Rule-based decision making inspired by examples/simple_ai.py"""
         lander = telemetry["lander"]
         altitude = telemetry["altitude"]
         speed = telemetry["speed"]
         vertical_speed = telemetry.get("vertical_speed", lander["vy"])
         horizontal_speed = telemetry.get("horizontal_speed", lander["vx"])
-        angle_degrees = telemetry.get("angle_degrees", abs(lander["rotation"]) * 57.3)
-        is_over_landing_zone = telemetry.get("is_over_landing_zone", False)
-        landing_zone_center_x = telemetry.get("landing_zone_center_x")
+        zone = telemetry.get("nearest_landing_zone")
         
-        actions = []
+        if not zone:
+            return ["thrust_off", "rotate_stop"]
         
-        # 1. Correct angle first (stay upright)
-        if angle_degrees > 5:
-            if lander["rotation"] > 0:
-                actions.append("rotate_left")
-            else:
-                actions.append("rotate_right")
+        x_error = zone['center_x'] - lander['x']
+        
+        # Rotation control
+        target_angle = 0
+        
+        # Priority 1: Emergency navigation if low and off-target
+        if abs(x_error) > 20 and altitude < 100:
+            target_angle = max(-0.4, min(0.4, x_error * 0.005))
+        # Priority 2: Brake horizontal velocity
+        elif abs(horizontal_speed) > 2.0 and altitude < 200:
+            target_angle = -horizontal_speed * 0.15
+            target_angle = max(-0.5, min(0.5, target_angle))
+        # Priority 3: Navigate when high
+        elif abs(x_error) > 50 and altitude > 200:
+            target_angle = max(-0.3, min(0.3, x_error * 0.001))
+        
+        angle_error = target_angle - lander['rotation']
+        
+        if angle_error > 0.1:
+            rotate_action = "rotate_right"
+        elif angle_error < -0.1:
+            rotate_action = "rotate_left"
         else:
-            actions.append("rotate_stop")
+            rotate_action = "rotate_stop"
         
-        # 2. Navigate to landing zone
-        if landing_zone_center_x and not is_over_landing_zone:
-            distance = lander["x"] - landing_zone_center_x
-            if abs(distance) > 10:
-                if distance > 0:
-                    actions.append("rotate_left")
-                else:
-                    actions.append("rotate_right")
+        # Thrust control
+        thrust_action = "thrust_off"
         
-        # 3. Control descent
-        target_vertical_speed = min(4.0, altitude / 20)  # Slower as we get closer
-        
-        if vertical_speed > target_vertical_speed:
-            actions.append("thrust_on")
+        # Priority 1: Emergency hover if low and off-target
+        if abs(x_error) > 20 and altitude < 50:
+            if vertical_speed > 0.5:  # Descending
+                thrust_action = "thrust_on"
+        # Priority 2: Brake horizontal velocity at low altitude
+        elif altitude < 200 and abs(horizontal_speed) > 3.0:
+            thrust_action = "thrust_on"
+        # Priority 3: Altitude-based control
+        elif altitude < 150:
+            if speed > 4.0 or vertical_speed > 2.5:
+                thrust_action = "thrust_on"
+        elif altitude < 300:
+            if vertical_speed > 5.0:
+                thrust_action = "thrust_on"
         else:
-            actions.append("thrust_off")
+            if vertical_speed > 7.0:
+                thrust_action = "thrust_on"
         
-        return actions
+        return [thrust_action, rotate_action]
     
     async def play(self):
         await self.connect()
