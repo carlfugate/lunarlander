@@ -81,6 +81,11 @@ export class Renderer {
     drawLander(lander, thrusting) {
         if (!lander) return;
         
+        // Debug logging for crash state
+        if (lander.crashed || lander.landed) {
+            console.log('Lander state:', { crashed: lander.crashed, landed: lander.landed, hasExplosion: !!this.explosion });
+        }
+        
         // Trigger explosion on crash (only once)
         if (lander.crashed && !this.explosion) {
             console.log('💥 EXPLOSION TRIGGERED!', lander);
