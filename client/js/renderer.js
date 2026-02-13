@@ -188,6 +188,10 @@ export class Renderer {
     }
     
     drawParticles() {
+        if (this.particles.length > 0) {
+            console.log(`Drawing ${this.particles.length} particles, explosion:`, this.explosion);
+        }
+        
         this.particles.forEach(p => {
             const alpha = p.life / p.maxLife;
             const size = p.isExplosion ? (3 + alpha * 5) : (2 + alpha * 2);
@@ -212,6 +216,7 @@ export class Renderer {
         
         // Draw explosion flash
         if (this.explosion && this.explosion.time < 0.3) {
+            console.log('Drawing explosion flash at', this.explosion);
             const progress = this.explosion.time / 0.3;
             const radius = 30 + progress * 50;
             const alpha = 1 - progress;

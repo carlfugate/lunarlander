@@ -354,7 +354,10 @@ function gameLoop(timestamp) {
     try {
         const thrusting = gameState.thrusting || (inputHandler ? inputHandler.isThrusting() : false);
         
-        // Only render if state changed (dirty flag optimization)
+        // Always render if there are particles or explosion (they animate)
+        const hasAnimation = renderer.particles.length > 0 || renderer.explosion;
+        
+        // Only render if state changed OR animation is active
         const currentState = JSON.stringify({
             lander: gameState.lander,
             thrusting: thrusting,
@@ -362,7 +365,7 @@ function gameLoop(timestamp) {
             speed: gameState.speed
         });
         
-        if (currentState !== lastRenderState) {
+        if (currentState !== lastRenderState || hasAnimation) {
             renderer.render(gameState, thrusting);
             lastRenderState = currentState;
         }
