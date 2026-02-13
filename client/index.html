@@ -13,9 +13,51 @@
             <button id="playBtn" class="menu-btn">Play Game</button>
             <button id="spectateBtn" class="menu-btn">Spectate Live Game</button>
             <button id="replayBtn" class="menu-btn">Watch Replay</button>
+            <button id="helpBtn" class="menu-btn">How to Play</button>
         </div>
         <div style="margin-top: 20px; color: #888; font-size: 14px; text-align: center;">
             Press ESC to return to menu | Arrow keys to control
+        </div>
+        <div id="helpScreen" class="hidden">
+            <h2>How to Play</h2>
+            <div class="help-content">
+                <div class="help-section">
+                    <h3>🎮 Controls</h3>
+                    <p><strong>↑ Arrow Up</strong> - Fire thrusters</p>
+                    <p><strong>← Arrow Left</strong> - Rotate left</p>
+                    <p><strong>→ Arrow Right</strong> - Rotate right</p>
+                    <p><strong>P</strong> - Pause/Resume</p>
+                    <p><strong>ESC</strong> - Return to menu</p>
+                    <p><strong>R</strong> - Restart (after game over)</p>
+                </div>
+                <div class="help-section">
+                    <h3>🎯 Objective</h3>
+                    <p>Land safely on the green landing zones!</p>
+                    <p><strong>Safe Landing:</strong></p>
+                    <p>• Speed &lt; 5.0 m/s</p>
+                    <p>• Angle &lt; 17° (nearly upright)</p>
+                    <p>• On a green landing zone</p>
+                </div>
+                <div class="help-section">
+                    <h3>⭐ Scoring</h3>
+                    <p><strong>Base:</strong> 1,000 points</p>
+                    <p><strong>Fuel Bonus:</strong> 0-500 (more fuel = more points)</p>
+                    <p><strong>Time Bonus:</strong> 0-300 (faster = more points)</p>
+                    <p><strong>Difficulty Multiplier:</strong></p>
+                    <p>• Easy: 1x (max 1,800)</p>
+                    <p>• Medium: 1.5x (max 2,700)</p>
+                    <p>• Hard: 2x (max 3,600)</p>
+                </div>
+                <div class="help-section">
+                    <h3>💡 Tips</h3>
+                    <p>• Watch your speed and angle indicators</p>
+                    <p>• Green = safe, Yellow = caution, Red = danger</p>
+                    <p>• Use short bursts of thrust to control descent</p>
+                    <p>• Rotate early to align with landing zone</p>
+                    <p>• Save fuel for the final approach</p>
+                </div>
+            </div>
+            <button id="backFromHelp" class="menu-btn">Back</button>
         </div>
         <div id="difficultySelect" class="hidden">
             <h2>Select Difficulty</h2>

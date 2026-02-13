@@ -61,6 +61,16 @@ document.getElementById('replayBtn').addEventListener('click', async () => {
     await loadReplays();
 });
 
+document.getElementById('helpBtn').addEventListener('click', () => {
+    document.querySelector('.menu-buttons').classList.add('hidden');
+    document.getElementById('helpScreen').classList.remove('hidden');
+});
+
+document.getElementById('backFromHelp').addEventListener('click', () => {
+    document.querySelector('.menu-buttons').classList.remove('hidden');
+    document.getElementById('helpScreen').classList.add('hidden');
+});
+
 document.getElementById('backFromGames').addEventListener('click', () => {
     stopGameLoop();
     document.querySelector('.menu-buttons').classList.remove('hidden');
@@ -434,6 +444,7 @@ document.addEventListener('keydown', (e) => {
         document.getElementById('difficultySelect').classList.add('hidden');
         document.getElementById('gameList').classList.add('hidden');
         document.getElementById('replayList').classList.add('hidden');
+        document.getElementById('helpScreen').classList.add('hidden');
         statusEl.classList.remove('visible');
         gameState = { terrain: null, lander: null, thrusting: false, altitude: 0, speed: 0 };
     }
