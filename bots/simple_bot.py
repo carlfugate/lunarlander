@@ -16,6 +16,7 @@ class SimpleBot:
         self.ws = None
         self.log_file = log_file or f"bot_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jsonl"
         self.frame_count = 0
+        self.terrain_width = 1200  # Will be updated from init message
         print(f"📝 Logging to: {self.log_file}")
         
     async def connect(self):
@@ -47,12 +48,11 @@ class SimpleBot:
         
         # PRIORITY 0: Wall avoidance (critical!)
         WALL_MARGIN = 50  # Stay 50px from walls
-        terrain_width = 800  # Game width
         
         if lander['x'] < WALL_MARGIN and horizontal_speed < 0:
             # Too close to left wall, moving left
             return ["thrust_on", "rotate_right"]
-        elif lander['x'] > terrain_width - WALL_MARGIN and horizontal_speed > 0:
+        elif lander['x'] > self.terrain_width - WALL_MARGIN and horizontal_speed > 0:
             # Too close to right wall, moving right
             return ["thrust_on", "rotate_left"]
         
@@ -133,7 +133,8 @@ class SimpleBot:
                 data = json.loads(message)
                 
                 if data["type"] == "init":
-                    print(f"✓ Game initialized")
+                    self.terrain_width = data.get("constants", {}).get("terrain_width", 1200)
+                    print(f"✓ Game initialized (terrain: {self.terrain_width}px wide)")
                     
                 elif data["type"] == "telemetry":
                     if data["lander"]["crashed"]:
