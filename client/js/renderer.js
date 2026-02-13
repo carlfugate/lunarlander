@@ -112,17 +112,17 @@ export class Renderer {
         const x = lander.x - this.camera.x;
         const y = lander.y - this.camera.y;
         
-        // Emit particles when thrusting (along craft axis: nose through bottom)
+        // Emit particles when thrusting (along craft axis: away from bottom)
         if (thrusting && lander.fuel > 0 && !lander.crashed) {
             for (let i = 0; i < 3; i++) {
                 const spread = (Math.random() - 0.5) * 0.3;
                 const speed = 2 + Math.random() * 2;
-                // Particles follow craft axis (away from nose, through bottom)
+                // Particles go away from bottom, along craft axis
                 this.particles.push({
                     x: lander.x,
                     y: lander.y,
-                    vx: -Math.sin(lander.rotation) * speed + spread,
-                    vy: -Math.cos(lander.rotation) * speed,
+                    vx: Math.sin(lander.rotation) * speed + spread,
+                    vy: Math.cos(lander.rotation) * speed,
                     life: 0.3,
                     maxLife: 0.3,
                     isExplosion: false
