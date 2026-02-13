@@ -115,7 +115,7 @@ export class Renderer {
         const y = lander.y - this.camera.y;
         
         // Emit particles when thrusting (opposite of thrust direction)
-        if (thrusting && lander.fuel > 0 && !lander.crashed) {
+        if (thrusting && lander.fuel > 0 && !lander.crashed && !lander.landed) {
             for (let i = 0; i < 3; i++) {
                 const spread = (Math.random() - 0.5) * 0.3;
                 const speed = 2 + Math.random() * 2;
@@ -147,7 +147,7 @@ export class Renderer {
         this.ctx.fill();
         
         // Draw thrust flame (shorter)
-        if (thrusting && lander.fuel > 0) {
+        if (thrusting && lander.fuel > 0 && !lander.crashed && !lander.landed) {
             this.ctx.fillStyle = '#ff0';
             this.ctx.beginPath();
             this.ctx.moveTo(-5, 0);
