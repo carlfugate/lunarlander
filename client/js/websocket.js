@@ -77,11 +77,12 @@ export class WebSocketClient {
         }
     }
     
-    startGame(difficulty = 'simple', token = null, telemetryMode = 'standard') {
+    startGame(difficulty = 'simple', token = null, telemetryMode = 'standard', updateRate = 60) {
         const message = {
             type: 'start',
             difficulty: difficulty,
-            telemetry_mode: telemetryMode
+            telemetry_mode: telemetryMode,
+            update_rate: updateRate
         };
         if (token) {
             message.token = token;

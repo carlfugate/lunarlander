@@ -6,11 +6,12 @@ from game.terrain import Terrain
 from game.replay import ReplayRecorder
 
 class GameSession:
-    def __init__(self, session_id, websocket, difficulty="simple", telemetry_mode="standard"):
+    def __init__(self, session_id, websocket, difficulty="simple", telemetry_mode="standard", update_rate=60):
         self.session_id = session_id
         self.websocket = websocket
         self.difficulty = difficulty
         self.telemetry_mode = telemetry_mode  # "standard" or "advanced"
+        self.update_rate = update_rate  # Hz: 60 for humans/bots, 2-10 for LLMs
         self.lander = Lander()
         self.terrain = Terrain(difficulty=difficulty)
         self.running = False
@@ -80,9 +81,14 @@ class GameSession:
                 self.running = False
                 break
                 
-            # Send telemetry (player at 60Hz, spectators at 30Hz)
+            # Send telemetry at configured rate
+            # Calculate how often to send based on update_rate
+            frames_per_update = int(60 / self.update_rate)
+            send_to_player = (frame_count % frames_per_update == 0)
             send_to_spectators = (frame_count % 2 == 0)
-            await self.send_telemetry(send_to_spectators)
+            
+            if send_to_player:
+                await self.send_telemetry(send_to_spectators)
             frame_count += 1
             
             # Sleep to maintain 60Hz

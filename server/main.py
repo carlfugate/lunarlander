@@ -227,6 +227,7 @@ async def websocket_endpoint(websocket: WebSocket):
         if message.get("type") == "start":
             difficulty = message.get("difficulty", "simple")
             telemetry_mode = message.get("telemetry_mode", "standard")
+            update_rate = message.get("update_rate", 60)
             
             # Validate difficulty
             if difficulty not in ["simple", "medium", "hard"]:
@@ -236,7 +237,10 @@ async def websocket_endpoint(websocket: WebSocket):
             if telemetry_mode not in ["standard", "advanced"]:
                 telemetry_mode = "standard"
             
-            session = GameSession(session_id, websocket, difficulty, telemetry_mode)
+            # Validate update rate (2-60 Hz)
+            update_rate = max(2, min(60, int(update_rate)))
+            
+            session = GameSession(session_id, websocket, difficulty, telemetry_mode, update_rate)
             session.user_id = user_id
             sessions[session_id] = session
             
