@@ -39,7 +39,11 @@ class OllamaBot:
             "type": "start",
             "difficulty": self.difficulty,
             "telemetry_mode": "advanced",
-            "update_rate": self.update_rate
+            "update_rate": self.update_rate,
+            # Bot identification (optional, for future leaderboard)
+            "bot_name": f"OllamaBot-{self.model}",
+            "bot_version": "1.0",
+            "bot_author": "Lunar Lander Team"
         }))
         print(f"✓ Started game (difficulty: {self.difficulty}, model: {self.model}, rate: {self.update_rate}Hz)")
         

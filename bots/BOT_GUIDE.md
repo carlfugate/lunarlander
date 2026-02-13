@@ -23,7 +23,11 @@ class MyBot:
             "type": "start",
             "difficulty": "simple",  # "simple", "medium", "hard"
             "telemetry_mode": "advanced",  # "standard" or "advanced"
-            "update_rate": 60  # Hz: 2-60 (use 60 for bots, 2-10 for LLMs)
+            "update_rate": 60,  # Hz: 2-60 (use 60 for bots, 2-10 for LLMs)
+            # Bot identification (optional, for future leaderboard/registration)
+            "bot_name": "MyBot",
+            "bot_version": "1.0.0",
+            "bot_author": "Your Name"
         }))
         
     async def play(self):
@@ -174,6 +178,31 @@ Send actions as input messages:
 {"type": "input", "action": "rotate_right"}
 {"type": "input", "action": "rotate_stop"}
 ```
+
+## Bot Identification (Optional)
+
+Include bot metadata in the start message for future leaderboard/registration:
+
+```python
+{
+    "type": "start",
+    "difficulty": "simple",
+    "telemetry_mode": "advanced",
+    "update_rate": 60,
+    # Optional bot identification
+    "bot_name": "MyBot",           # Bot name (for leaderboard display)
+    "bot_version": "1.0.0",        # Version string
+    "bot_author": "Your Name"      # Author/team name
+}
+```
+
+**Future Features:**
+- Bot leaderboard with rankings
+- Bot registration system
+- Performance tracking across runs
+- Tournament mode
+
+**Current Status:** Metadata is accepted and stored but not yet used. Include it now to be ready for future features!
 
 ## Bot Strategy Tips
 

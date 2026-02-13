@@ -229,6 +229,11 @@ async def websocket_endpoint(websocket: WebSocket):
             telemetry_mode = message.get("telemetry_mode", "standard")
             update_rate = message.get("update_rate", 60)
             
+            # Bot metadata (optional)
+            bot_name = message.get("bot_name", None)
+            bot_version = message.get("bot_version", None)
+            bot_author = message.get("bot_author", None)
+            
             # Validate difficulty
             if difficulty not in ["simple", "medium", "hard"]:
                 difficulty = "simple"
@@ -242,6 +247,9 @@ async def websocket_endpoint(websocket: WebSocket):
             
             session = GameSession(session_id, websocket, difficulty, telemetry_mode, update_rate)
             session.user_id = user_id
+            session.bot_name = bot_name
+            session.bot_version = bot_version
+            session.bot_author = bot_author
             sessions[session_id] = session
             
             # Send initial state

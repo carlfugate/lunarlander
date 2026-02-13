@@ -28,7 +28,11 @@ class SimpleBot:
             "type": "start",
             "difficulty": self.difficulty,
             "telemetry_mode": "advanced",
-            "update_rate": 60
+            "update_rate": 60,
+            # Bot identification (optional, for future leaderboard)
+            "bot_name": "SimpleBot",
+            "bot_version": "1.0",
+            "bot_author": "Lunar Lander Team"
         }))
         print(f"✓ Started game (difficulty: {self.difficulty}, mode: bot)")
         

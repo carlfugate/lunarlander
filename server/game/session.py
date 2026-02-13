@@ -25,6 +25,11 @@ class GameSession:
         self.record_replay = True  # Enable replay recording
         self.spectators = []  # List of spectator websockets
         
+        # Bot metadata (optional, for future leaderboard/registration)
+        self.bot_name = None
+        self.bot_version = None
+        self.bot_author = None
+        
     async def start(self):
         self.running = True
         self.start_time = time.time()
