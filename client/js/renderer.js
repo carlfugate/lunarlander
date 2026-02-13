@@ -112,18 +112,20 @@ export class Renderer {
         const x = lander.x - this.camera.x;
         const y = lander.y - this.camera.y;
         
-        // Emit particles when thrusting (perpendicular to bottom of craft)
+        // Emit particles when thrusting (straight down from craft's perspective)
         if (thrusting && lander.fuel > 0 && !lander.crashed) {
             for (let i = 0; i < 3; i++) {
-                const spread = (Math.random() - 0.5) * 0.3;
+                const spread = (Math.random() - 0.5) * 0.2;
                 const speed = 2 + Math.random() * 2;
-                // Thrust goes perpendicular to bottom (rotation + 90°)
-                const thrustAngle = lander.rotation + spread;
+                // In craft's local coords, thrust goes straight down (0, +speed)
+                // Rotate by craft's rotation to get world coords
+                const localX = spread;
+                const localY = speed;
                 this.particles.push({
                     x: lander.x,
                     y: lander.y,
-                    vx: Math.sin(thrustAngle) * speed,
-                    vy: Math.cos(thrustAngle) * speed,
+                    vx: localX * Math.cos(lander.rotation) + localY * Math.sin(lander.rotation),
+                    vy: -localX * Math.sin(lander.rotation) + localY * Math.cos(lander.rotation),
                     life: 0.3,
                     maxLife: 0.3,
                     isExplosion: false
