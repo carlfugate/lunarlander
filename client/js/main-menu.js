@@ -293,6 +293,7 @@ async function playReplay(replayId) {
 async function startGame(difficulty = 'simple') {
     try {
         stopGameLoop();
+        renderer.reset();
         statusEl.textContent = 'Connecting...';
         statusEl.classList.add('visible');
         

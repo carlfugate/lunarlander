@@ -337,11 +337,55 @@ describe('Renderer - Particle System', () => {
   
   it('should render particles without crashing', () => {
     renderer.particles = [
-      { x: 100, y: 100, vx: 0, vy: 0, life: 0.5, maxLife: 0.5 }
+      { x: 100, y: 100, vx: 0, vy: 0, life: 0.5, maxLife: 0.5, isExplosion: false }
     ];
     
     expect(() => {
       renderer.drawParticles();
     }).not.toThrow();
+  });
+  
+  it('should trigger explosion on crash', () => {
+    const lander = { 
+      x: 600, 
+      y: 400, 
+      vx: 0, 
+      vy: 0, 
+      rotation: 0, 
+      fuel: 500,
+      crashed: true,
+      landed: false
+    };
+    
+    expect(renderer.explosion).toBeNull();
+    renderer.drawLander(lander, false);
+    expect(renderer.explosion).not.toBeNull();
+    expect(renderer.particles.length).toBe(50); // Explosion burst
+  });
+  
+  it('should render explosion particles differently', () => {
+    renderer.particles = [
+      { x: 100, y: 100, vx: 0, vy: 0, life: 1.0, maxLife: 1.5, isExplosion: true }
+    ];
+    
+    expect(() => {
+      renderer.drawParticles();
+    }).not.toThrow();
+  });
+  
+  it('should clear explosion after duration', () => {
+    renderer.explosion = { x: 100, y: 100, time: 0, duration: 1.5 };
+    
+    renderer.updateParticles(2.0); // Advance past duration
+    expect(renderer.explosion).toBeNull();
+  });
+  
+  it('should reset particles and explosion', () => {
+    renderer.particles = [{ x: 100, y: 100, vx: 0, vy: 0, life: 1, maxLife: 1 }];
+    renderer.explosion = { x: 100, y: 100, time: 0, duration: 1.5 };
+    
+    renderer.reset();
+    expect(renderer.particles.length).toBe(0);
+    expect(renderer.explosion).toBeNull();
   });
 });

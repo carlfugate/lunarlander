@@ -6,6 +6,7 @@ export class Renderer {
         this.height = canvas.height;
         this.camera = { x: 0, y: 0 };
         this.particles = [];
+        this.explosion = null;
         
         // Make canvas responsive
         this.setupResponsive();
@@ -80,11 +81,39 @@ export class Renderer {
     drawLander(lander, thrusting) {
         if (!lander) return;
         
+        // Trigger explosion on crash
+        if (lander.crashed && !this.explosion) {
+            this.explosion = {
+                x: lander.x,
+                y: lander.y,
+                time: 0,
+                duration: 1.5
+            };
+            
+            // Create explosion particles
+            for (let i = 0; i < 50; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 3 + Math.random() * 5;
+                this.particles.push({
+                    x: lander.x,
+                    y: lander.y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 1.0 + Math.random() * 0.5,
+                    maxLife: 1.5,
+                    isExplosion: true
+                });
+            }
+        }
+        
+        // Don't draw lander if exploding
+        if (this.explosion && this.explosion.time < 0.5) return;
+        
         const x = lander.x - this.camera.x;
         const y = lander.y - this.camera.y;
         
         // Emit particles when thrusting
-        if (thrusting && lander.fuel > 0) {
+        if (thrusting && lander.fuel > 0 && !lander.crashed) {
             for (let i = 0; i < 3; i++) {
                 const angle = lander.rotation + (Math.random() - 0.5) * 0.3;
                 const speed = 2 + Math.random() * 2;
@@ -94,7 +123,8 @@ export class Renderer {
                     vx: Math.sin(angle) * speed,
                     vy: Math.cos(angle) * speed,
                     life: 0.5,
-                    maxLife: 0.5
+                    maxLife: 0.5,
+                    isExplosion: false
                 });
             }
         }
@@ -127,6 +157,14 @@ export class Renderer {
     }
     
     updateParticles(dt = 1/60) {
+        // Update explosion timer
+        if (this.explosion) {
+            this.explosion.time += dt;
+            if (this.explosion.time > this.explosion.duration) {
+                this.explosion = null;
+            }
+        }
+        
         // Update and remove dead particles
         this.particles = this.particles.filter(p => {
             p.x += p.vx;
@@ -144,10 +182,18 @@ export class Renderer {
     drawParticles() {
         this.particles.forEach(p => {
             const alpha = p.life / p.maxLife;
-            const size = 2 + alpha * 2;
-            const hue = 30 + alpha * 30; // Orange to yellow
+            const size = p.isExplosion ? (3 + alpha * 5) : (2 + alpha * 2);
             
-            this.ctx.fillStyle = `hsla(${hue}, 100%, 50%, ${alpha})`;
+            if (p.isExplosion) {
+                // Red/orange/yellow explosion particles
+                const hue = 0 + alpha * 60;
+                this.ctx.fillStyle = `hsla(${hue}, 100%, 50%, ${alpha})`;
+            } else {
+                // Orange/yellow thrust particles
+                const hue = 30 + alpha * 30;
+                this.ctx.fillStyle = `hsla(${hue}, 100%, 50%, ${alpha})`;
+            }
+            
             this.ctx.fillRect(
                 p.x - this.camera.x - size/2,
                 p.y - this.camera.y - size/2,
@@ -155,6 +201,21 @@ export class Renderer {
                 size
             );
         });
+        
+        // Draw explosion flash
+        if (this.explosion && this.explosion.time < 0.3) {
+            const progress = this.explosion.time / 0.3;
+            const radius = 30 + progress * 50;
+            const alpha = 1 - progress;
+            
+            const x = this.explosion.x - this.camera.x;
+            const y = this.explosion.y - this.camera.y;
+            
+            this.ctx.fillStyle = `rgba(255, 200, 0, ${alpha * 0.5})`;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, radius, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
     }
     
     drawHUD(lander, altitude, speed, spectatorCount) {
@@ -278,6 +339,11 @@ export class Renderer {
         // Clamp camera to terrain bounds
         this.camera.x = Math.max(0, Math.min(this.camera.x, 1200 - this.width));
         this.camera.y = Math.max(0, Math.min(this.camera.y, 800 - this.height));
+    }
+    
+    reset() {
+        this.particles = [];
+        this.explosion = null;
     }
     
     render(gameState, thrusting) {
