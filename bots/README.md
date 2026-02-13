@@ -53,17 +53,18 @@ python3 bots/simple_bot.py hard
 Language model-powered bot using local LLMs via Ollama.
 
 **Recommended Models**:
-- **gemma3:4b** - Best for Lunar Lander! Fast (100-150ms), good reasoning
-- **llava:latest** - Good alternative (200-300ms)
-- **qwen2.5:7b** - Excellent balance (not installed by default)
-- **llama3.2:3b** - Very fast option (not installed by default)
+- **phi3:mini** - Fastest! (80-120ms), great for 10Hz
+- **gemma3:4b** - Fast (100-150ms), good reasoning
+- **llama3.2:3b** - Very fast option
+- **qwen2.5:7b** - Excellent balance
 
 **Setup**:
 ```bash
 # Start Ollama service
 ollama serve
 
-# If you need to pull a model
+# Pull recommended models
+ollama pull phi3:mini
 ollama pull gemma3:4b
 ```
 
@@ -73,14 +74,17 @@ ollama pull gemma3:4b
 cd ~/Documents/Github/lunarlander
 source venv/bin/activate
 
-# Default: gemma3:4b at 10 Hz (recommended for your setup)
-python3 bots/ollama_bot.py --model gemma3:4b --rate 10
+# List installed models
+python3 bots/ollama_bot.py --list
 
-# Or use llava
-python3 bots/ollama_bot.py --model llava:latest --rate 5
+# Auto-select best model (phi3:mini preferred)
+python3 bots/ollama_bot.py
+
+# Specify model
+python3 bots/ollama_bot.py --model phi3:mini --rate 10
 
 # Specify difficulty
-python3 bots/ollama_bot.py --model gemma3:4b --rate 10 --difficulty medium
+python3 bots/ollama_bot.py --model gemma3:4b --difficulty medium
 ```
 
 **How it works**:
@@ -96,18 +100,22 @@ python3 bots/ollama_bot.py --model gemma3:4b --rate 10 --difficulty medium
 
 | Model | Size | Speed | Update Rate | Success Rate | Notes |
 |-------|------|-------|-------------|--------------|-------|
-| gemma3:4b | 3.3GB | ~120ms | 10 Hz | ~50% | ⭐ Best for your setup |
-| llava:latest | 4.7GB | ~250ms | 5 Hz | ~45% | Good alternative |
-| qwen2.5:7b | 4.7GB | ~200ms | 5 Hz | ~50% | Excellent (not installed) |
-| llama3.2:3b | 2.0GB | ~150ms | 5-10 Hz | ~40% | Fast (not installed) |
+| phi3:mini | 2.3GB | ~100ms | 10 Hz | ~50% | ⭐ Fastest! |
+| gemma3:4b | 3.3GB | ~120ms | 10 Hz | ~50% | Fast & smart |
+| llama3.2:3b | 2.0GB | ~150ms | 5-10 Hz | ~40% | Very fast |
+| llava:latest | 4.7GB | ~250ms | 5 Hz | ~45% | Good but slower |
+| qwen2.5:7b | 4.7GB | ~200ms | 5 Hz | ~50% | Excellent |
 
 *Tested on M1 Mac. Your performance may vary.*
 
 **Your installed models:**
-- ✅ gemma3:4b - Recommended for Lunar Lander
+- ✅ phi3:mini - Fastest, recommended!
+- ✅ gemma3:4b - Fast with good reasoning
 - ✅ llava:latest - Works but slower
-- ⚠️ llama3.2-vision - Vision model (not ideal for text-only game)
-- ⚠️ qwen3-vl:8b - Vision model (not ideal for text-only game)
+- ✅ llama3.2-vision - Vision model (not ideal for text-only game)
+- ✅ qwen3-vl:8b - Vision model (not ideal for text-only game)
+
+**Auto-selection priority**: phi3:mini → gemma3:4b → llama3.2:3b → qwen2.5:7b
 
 ## Troubleshooting
 

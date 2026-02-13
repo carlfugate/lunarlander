@@ -8,6 +8,16 @@ import websockets
 import json
 import sys
 import requests
+import subprocess
+
+def get_installed_models():
+    """Get list of installed Ollama models"""
+    try:
+        result = subprocess.run(['ollama', 'list'], capture_output=True, text=True)
+        lines = result.stdout.strip().split('\n')[1:]  # Skip header
+        return [line.split()[0] for line in lines if line.strip()]
+    except:
+        return []
 
 class OllamaBot:
     def __init__(self, ws_url="ws://localhost:8000/ws", difficulty="simple", 
@@ -156,11 +166,30 @@ RESPOND JSON ONLY:
 
 if __name__ == "__main__":
     import argparse
+    
+    installed = get_installed_models()
+    if not installed:
+        print("Error: No Ollama models found. Run 'ollama pull <model>' first.")
+        sys.exit(1)
+    
     parser = argparse.ArgumentParser(description="LLM-powered Lunar Lander bot")
     parser.add_argument("--difficulty", default="simple", choices=["simple", "medium", "hard"])
-    parser.add_argument("--model", default="gemma3:4b", help="Ollama model name")
+    parser.add_argument("--model", choices=installed, help=f"Ollama model ({', '.join(installed[:3])}...)")
     parser.add_argument("--rate", type=int, default=10, help="Update rate in Hz (2-10)")
+    parser.add_argument("--list", action="store_true", help="List installed models")
     args = parser.parse_args()
+    
+    if args.list:
+        print("Installed Ollama models:")
+        for model in installed:
+            print(f"  - {model}")
+        sys.exit(0)
+    
+    # Auto-select best model if not specified
+    if not args.model:
+        preferred = ['phi3:mini', 'gemma3:4b', 'llama3.2:3b', 'qwen2.5:7b']
+        args.model = next((m for m in preferred if m in installed), installed[0])
+        print(f"Auto-selected model: {args.model}")
     
     bot = OllamaBot(
         difficulty=args.difficulty,
