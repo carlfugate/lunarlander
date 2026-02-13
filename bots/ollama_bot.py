@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 LLM-powered bot for Lunar Lander using Ollama
-Recommended models: qwen2.5:7b, llama3.2:3b, phi3:mini
+Recommended models: gemma3:4b (fast), llava:latest (good), qwen2.5:7b (excellent)
 """
 import asyncio
 import websockets
@@ -11,7 +11,7 @@ import requests
 
 class OllamaBot:
     def __init__(self, ws_url="ws://localhost:8000/ws", difficulty="simple", 
-                 model="qwen2.5:7b", update_rate=5):
+                 model="gemma3:4b", update_rate=10):
         self.ws_url = ws_url
         self.difficulty = difficulty
         self.model = model
@@ -158,8 +158,8 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="LLM-powered Lunar Lander bot")
     parser.add_argument("--difficulty", default="simple", choices=["simple", "medium", "hard"])
-    parser.add_argument("--model", default="qwen2.5:7b", help="Ollama model name")
-    parser.add_argument("--rate", type=int, default=5, help="Update rate in Hz (2-10)")
+    parser.add_argument("--model", default="gemma3:4b", help="Ollama model name")
+    parser.add_argument("--rate", type=int, default=10, help="Update rate in Hz (2-10)")
     args = parser.parse_args()
     
     bot = OllamaBot(

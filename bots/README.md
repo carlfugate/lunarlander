@@ -5,7 +5,11 @@ Test bots for the Lunar Lander game demonstrating different AI approaches.
 ## Prerequisites
 
 ```bash
-# Install Python dependencies
+# Use the project's virtual environment (has all dependencies)
+cd ~/Documents/Github/lunarlander
+source venv/bin/activate
+
+# Or install dependencies separately
 pip install websockets requests
 
 # For LLM bot: Install Ollama
@@ -28,6 +32,10 @@ Fast, deterministic bot using basic physics heuristics.
 
 **Usage**:
 ```bash
+# Activate venv first
+cd ~/Documents/Github/lunarlander
+source venv/bin/activate
+
 # Easy difficulty
 python3 bots/simple_bot.py simple
 
@@ -45,36 +53,34 @@ python3 bots/simple_bot.py hard
 Language model-powered bot using local LLMs via Ollama.
 
 **Recommended Models**:
-- **qwen2.5:7b** - Best balance of speed and intelligence (recommended)
-- **llama3.2:3b** - Faster, good for 10Hz
-- **phi3:mini** - Very fast, good for 10Hz
-- **llama3.1:8b** - Slower but smarter
+- **gemma3:4b** - Best for Lunar Lander! Fast (100-150ms), good reasoning
+- **llava:latest** - Good alternative (200-300ms)
+- **qwen2.5:7b** - Excellent balance (not installed by default)
+- **llama3.2:3b** - Very fast option (not installed by default)
 
 **Setup**:
 ```bash
 # Start Ollama service
 ollama serve
 
-# Pull a model (in another terminal)
-ollama pull qwen2.5:7b
-
-# Or try a smaller/faster model
-ollama pull llama3.2:3b
+# If you need to pull a model
+ollama pull gemma3:4b
 ```
 
 **Usage**:
 ```bash
-# Default: qwen2.5:7b at 5 Hz
-python3 bots/ollama_bot.py
+# Activate venv first
+cd ~/Documents/Github/lunarlander
+source venv/bin/activate
 
-# Specify model and difficulty
-python3 bots/ollama_bot.py --model llama3.2:3b --difficulty medium
+# Default: gemma3:4b at 10 Hz (recommended for your setup)
+python3 bots/ollama_bot.py --model gemma3:4b --rate 10
 
-# Faster update rate (10 Hz) for small models
-python3 bots/ollama_bot.py --model phi3:mini --rate 10
+# Or use llava
+python3 bots/ollama_bot.py --model llava:latest --rate 5
 
-# Slower rate (2 Hz) for large models
-python3 bots/ollama_bot.py --model llama3.1:8b --rate 2
+# Specify difficulty
+python3 bots/ollama_bot.py --model gemma3:4b --rate 10 --difficulty medium
 ```
 
 **How it works**:
@@ -90,12 +96,18 @@ python3 bots/ollama_bot.py --model llama3.1:8b --rate 2
 
 | Model | Size | Speed | Update Rate | Success Rate | Notes |
 |-------|------|-------|-------------|--------------|-------|
-| qwen2.5:7b | 4.7GB | ~200ms | 5 Hz | ~50% | Best overall |
-| llama3.2:3b | 2.0GB | ~150ms | 5-10 Hz | ~40% | Fast, decent |
-| phi3:mini | 2.3GB | ~100ms | 10 Hz | ~30% | Very fast |
-| llama3.1:8b | 4.7GB | ~300ms | 2-5 Hz | ~60% | Slower, smarter |
+| gemma3:4b | 3.3GB | ~120ms | 10 Hz | ~50% | ⭐ Best for your setup |
+| llava:latest | 4.7GB | ~250ms | 5 Hz | ~45% | Good alternative |
+| qwen2.5:7b | 4.7GB | ~200ms | 5 Hz | ~50% | Excellent (not installed) |
+| llama3.2:3b | 2.0GB | ~150ms | 5-10 Hz | ~40% | Fast (not installed) |
 
 *Tested on M1 Mac. Your performance may vary.*
+
+**Your installed models:**
+- ✅ gemma3:4b - Recommended for Lunar Lander
+- ✅ llava:latest - Works but slower
+- ⚠️ llama3.2-vision - Vision model (not ideal for text-only game)
+- ⚠️ qwen3-vl:8b - Vision model (not ideal for text-only game)
 
 ## Troubleshooting
 
