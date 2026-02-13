@@ -194,4 +194,38 @@ describe('Renderer - Landing Zone Highlights', () => {
       renderer.drawTerrain(terrain, null);
     }).not.toThrow();
   });
+  
+  it('should use yellow warning color for medium fuel (100-300)', () => {
+    const lander = { 
+      x: 600, 
+      y: 400, 
+      vx: 0, 
+      vy: 2, 
+      rotation: 0, 
+      fuel: 200,
+      crashed: false,
+      landed: false
+    };
+    
+    expect(() => {
+      renderer.drawHUD(lander, 300, 2.0);
+    }).not.toThrow();
+  });
+  
+  it('should use yellow warning color for medium speed (3.0-5.0)', () => {
+    const lander = { 
+      x: 600, 
+      y: 400, 
+      vx: 0, 
+      vy: 4.0, 
+      rotation: 0, 
+      fuel: 500,
+      crashed: false,
+      landed: false
+    };
+    
+    expect(() => {
+      renderer.drawHUD(lander, 300, 4.0);
+    }).not.toThrow();
+  });
 });

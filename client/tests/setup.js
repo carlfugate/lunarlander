@@ -14,6 +14,8 @@ const mockContext = {
   strokeStyle: '',
   lineWidth: 0,
   font: '',
+  shadowBlur: 0,
+  shadowColor: '',
   fillRect: () => {},
   strokeRect: () => {},
   beginPath: () => {},
@@ -27,6 +29,7 @@ const mockContext = {
   translate: () => {},
   rotate: () => {},
   fillText: () => {},
+  measureText: (text) => ({ width: text.length * 10 }),
   getImageData: () => ({ data: [0, 0, 0, 255] }),
 };
 

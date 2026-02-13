@@ -112,8 +112,6 @@ export class Renderer {
     drawHUD(lander, altitude, speed, spectatorCount) {
         if (!lander) return;
         
-        this.ctx.font = '16px monospace';
-        
         // Use provided values or calculate fallback
         const displaySpeed = speed !== undefined ? speed : Math.sqrt(lander.vx**2 + lander.vy**2);
         const displayAltitude = altitude !== undefined ? altitude : (this.height - lander.y);
@@ -121,43 +119,78 @@ export class Renderer {
         const angle = Math.abs(lander.rotation);
         const angleDegrees = (angle * 180 / Math.PI).toFixed(1);
         
-        // Color based on safety thresholds
-        const speedSafe = lander.vy < 0 || displaySpeed < 5.0;
-        const angleSafe = angle < 0.3;
+        // Enhanced color coding with yellow warning zone
+        const fuelColor = lander.fuel > 300 ? '#0f0' : lander.fuel > 100 ? '#ff0' : '#f00';
+        const speedColor = displaySpeed < 3.0 ? '#0f0' : displaySpeed < 5.0 ? '#ff0' : '#f00';
+        const angleColor = angle < 0.2 ? '#0f0' : angle < 0.3 ? '#ff0' : '#f00';
         
         const hud = [
-            { label: 'Fuel', value: Math.floor(lander.fuel).toString(), color: lander.fuel > 100 ? '#0f0' : '#f00' },
-            { label: 'Altitude', value: Math.floor(displayAltitude).toString(), color: '#0f0' },
-            { label: 'Speed', value: displaySpeed.toFixed(2), color: speedSafe ? '#0f0' : '#f00', target: '< 5.0' },
-            { label: 'Angle', value: angleDegrees + '°', color: angleSafe ? '#0f0' : '#f00', target: '< 17°' },
-            { label: 'Vertical', value: lander.vy.toFixed(2), color: '#888' },
-            { label: 'Horizontal', value: lander.vx.toFixed(2), color: '#888' }
+            { label: 'FUEL', value: Math.floor(lander.fuel).toString(), color: fuelColor },
+            { label: 'ALT', value: Math.floor(displayAltitude).toString(), color: '#0f0' },
+            { label: 'SPEED', value: displaySpeed.toFixed(1), color: speedColor, target: '<5.0' },
+            { label: 'ANGLE', value: angleDegrees + '°', color: angleColor, target: '<17°' },
+            { label: 'V-VEL', value: lander.vy.toFixed(1), color: '#888' },
+            { label: 'H-VEL', value: lander.vx.toFixed(1), color: '#888' }
         ];
         
+        // Draw HUD items with background boxes
+        this.ctx.font = 'bold 20px monospace';
         hud.forEach((item, i) => {
-            this.ctx.fillStyle = item.color;
+            const x = 15;
+            const y = 25 + i * 35;
             const text = `${item.label}: ${item.value}`;
             const targetText = item.target ? ` (${item.target})` : '';
-            this.ctx.fillText(text + targetText, 10, 30 + i * 20);
+            const fullText = text + targetText;
+            
+            // Background box
+            const metrics = this.ctx.measureText(fullText);
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            this.ctx.fillRect(x - 5, y - 18, metrics.width + 10, 26);
+            
+            // Text
+            this.ctx.fillStyle = item.color;
+            this.ctx.fillText(fullText, x, y);
         });
         
         // Spectator count (top right)
         if (spectatorCount !== undefined) {
-            this.ctx.fillStyle = '#888';
-            this.ctx.font = '14px monospace';
+            this.ctx.font = 'bold 18px monospace';
             const text = `👁 ${spectatorCount} watching`;
-            this.ctx.fillText(text, this.width - 150, 30);
+            const metrics = this.ctx.measureText(text);
+            const x = this.width - metrics.width - 20;
+            const y = 30;
+            
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            this.ctx.fillRect(x - 5, y - 18, metrics.width + 10, 26);
+            this.ctx.fillStyle = '#888';
+            this.ctx.fillText(text, x, y);
         }
         
-        // Fuel bar
-        const barWidth = 200;
-        const barHeight = 20;
+        // Fuel bar (bottom left)
+        const barWidth = 250;
+        const barHeight = 25;
         const fuelPercent = lander.fuel / 1000;
+        const barX = 15;
+        const barY = this.height - 50;
         
+        // Background
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        this.ctx.fillRect(barX - 5, barY - 5, barWidth + 10, barHeight + 10);
+        
+        // Border
         this.ctx.strokeStyle = '#0f0';
-        this.ctx.strokeRect(10, this.height - 40, barWidth, barHeight);
-        this.ctx.fillStyle = fuelPercent > 0.3 ? '#0f0' : '#f00';
-        this.ctx.fillRect(10, this.height - 40, barWidth * fuelPercent, barHeight);
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(barX, barY, barWidth, barHeight);
+        
+        // Fill with color coding
+        const barColor = fuelPercent > 0.3 ? '#0f0' : fuelPercent > 0.1 ? '#ff0' : '#f00';
+        this.ctx.fillStyle = barColor;
+        this.ctx.fillRect(barX, barY, barWidth * fuelPercent, barHeight);
+        
+        // Label
+        this.ctx.font = 'bold 14px monospace';
+        this.ctx.fillStyle = '#fff';
+        this.ctx.fillText('FUEL', barX + 5, barY - 10);
     }
     
     updateCamera(lander) {
