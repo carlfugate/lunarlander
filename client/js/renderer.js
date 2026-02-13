@@ -81,8 +81,8 @@ export class Renderer {
     drawLander(lander, thrusting) {
         if (!lander) return;
         
-        // Trigger explosion on crash
-        if (lander.crashed && !this.explosion) {
+        // Trigger explosion on crash (only once)
+        if (lander.crashed && !this.explosion && !lander.landed) {
             this.explosion = {
                 x: lander.x,
                 y: lander.y,
@@ -112,18 +112,18 @@ export class Renderer {
         const x = lander.x - this.camera.x;
         const y = lander.y - this.camera.y;
         
-        // Emit particles when thrusting
+        // Emit particles when thrusting (from bottom of lander in world coords)
         if (thrusting && lander.fuel > 0 && !lander.crashed) {
             for (let i = 0; i < 3; i++) {
-                const angle = lander.rotation + (Math.random() - 0.5) * 0.3;
+                const spread = (Math.random() - 0.5) * 0.3;
                 const speed = 2 + Math.random() * 2;
                 this.particles.push({
                     x: lander.x,
                     y: lander.y,
-                    vx: Math.sin(angle) * speed,
-                    vy: Math.cos(angle) * speed,
-                    life: 0.5,
-                    maxLife: 0.5,
+                    vx: Math.sin(lander.rotation + spread) * speed,
+                    vy: Math.cos(lander.rotation + spread) * speed,
+                    life: 0.3,
+                    maxLife: 0.3,
                     isExplosion: false
                 });
             }
@@ -142,12 +142,12 @@ export class Renderer {
         this.ctx.closePath();
         this.ctx.fill();
         
-        // Draw thrust flame
+        // Draw thrust flame (shorter)
         if (thrusting && lander.fuel > 0) {
             this.ctx.fillStyle = '#ff0';
             this.ctx.beginPath();
             this.ctx.moveTo(-5, 0);
-            this.ctx.lineTo(0, 10 + Math.random() * 5);
+            this.ctx.lineTo(0, 6 + Math.random() * 3);
             this.ctx.lineTo(5, 0);
             this.ctx.closePath();
             this.ctx.fill();
@@ -272,7 +272,7 @@ export class Renderer {
         this.ctx.font = 'bold 32px monospace';
         const warnings = [];
         if (lowFuel && flash) warnings.push('⚠ LOW FUEL ⚠');
-        if (highSpeed && flash) warnings.push('⚠ TOO FAST ⚠');
+        if (highSpeed && displayAltitude < 50 && flash) warnings.push('⚠ TOO FAST ⚠');
         
         warnings.forEach((warning, i) => {
             const metrics = this.ctx.measureText(warning);
