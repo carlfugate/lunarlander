@@ -132,3 +132,57 @@ https://github.com/carlfugate/lunarlander
 - ✅ Live spectating
 - ✅ Replay analysis
 - ✅ Internet deployment via ngrok
+
+## Future Enhancements
+
+### Phase 10: Bot Leaderboard & Registration (Planned)
+**Estimated Time**: 4-6 hours
+
+**Features:**
+- Bot registration system with unique IDs
+- Persistent leaderboard (database-backed)
+- Performance metrics tracking:
+  - Success rate by difficulty
+  - Average score
+  - Fuel efficiency
+  - Landing precision
+- Bot vs Bot tournament mode
+- Historical performance graphs
+- API endpoints for leaderboard queries
+
+**Infrastructure Ready:**
+- ✅ Bot identification protocol (name, version, author)
+- ✅ Session tracking with metadata
+- ✅ Replay recording for analysis
+- 🔜 Database schema for bot stats
+- 🔜 Leaderboard UI component
+- 🔜 Tournament bracket system
+
+### Phase 11: Sound Effects (Optional)
+**Estimated Time**: 30 minutes
+
+**Features:**
+- Thrust engine sound (looping)
+- Crash explosion sound
+- Landing success sound
+- Low fuel warning beep
+- UI click sounds
+
+### Phase 12: Mobile Controls (Optional)
+**Estimated Time**: 1-2 hours
+
+**Features:**
+- Touch-based thrust button
+- Tilt-based rotation control
+- On-screen virtual joystick
+- Responsive layout for mobile screens
+
+### Phase 13: Multiplayer Race Mode (Future)
+**Estimated Time**: 8-10 hours
+
+**Features:**
+- Multiple landers on same terrain
+- Real-time position sync
+- Race to landing zone
+- Collision detection between landers
+- Spectator view of all players
