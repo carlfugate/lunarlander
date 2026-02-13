@@ -96,14 +96,17 @@ class SimpleBot:
         self.frame_count += 1
         log_entry = {
             "frame": self.frame_count,
-            "altitude": telemetry["altitude"],
-            "speed": telemetry["speed"],
+            "altitude": telemetry.get("altitude", 0),
+            "speed": telemetry.get("speed", 0),
             "vx": telemetry.get("horizontal_speed", 0),
             "vy": telemetry.get("vertical_speed", 0),
             "angle": telemetry.get("angle_degrees", 0),
-            "fuel": telemetry["lander"]["fuel"],
-            "x": telemetry["lander"]["x"],
-            "zone_x": telemetry.get("nearest_landing_zone", {}).get("center_x", 0),
+            "fuel": telemetry.get("lander", {}).get("fuel", 0),
+            "x": telemetry.get("lander", {}).get("x", 0),
+            "zone_x": telemetry.get("landing_zone_center_x", 0),
+            "is_over_zone": telemetry.get("is_over_landing_zone", False),
+            "is_safe_speed": telemetry.get("is_safe_speed", False),
+            "is_safe_angle": telemetry.get("is_safe_angle", False),
             "actions": actions,
             "reason": reason
         }
