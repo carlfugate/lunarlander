@@ -263,3 +263,85 @@ describe('Renderer - Landing Zone Highlights', () => {
     }).not.toThrow();
   });
 });
+
+describe('Renderer - Particle System', () => {
+  let canvas, renderer;
+  
+  beforeEach(() => {
+    canvas = document.createElement('canvas');
+    canvas.width = 1200;
+    canvas.height = 800;
+    
+    const container = document.createElement('div');
+    container.style.width = '1200px';
+    container.style.height = '800px';
+    container.appendChild(canvas);
+    document.body.appendChild(container);
+    
+    renderer = new Renderer(canvas);
+  });
+  
+  it('should emit particles when thrusting', () => {
+    const lander = { 
+      x: 600, 
+      y: 400, 
+      vx: 0, 
+      vy: 0, 
+      rotation: 0, 
+      fuel: 500,
+      crashed: false,
+      landed: false
+    };
+    
+    expect(renderer.particles.length).toBe(0);
+    
+    renderer.drawLander(lander, true);
+    expect(renderer.particles.length).toBeGreaterThan(0);
+  });
+  
+  it('should not emit particles when not thrusting', () => {
+    const lander = { 
+      x: 600, 
+      y: 400, 
+      vx: 0, 
+      vy: 0, 
+      rotation: 0, 
+      fuel: 500,
+      crashed: false,
+      landed: false
+    };
+    
+    renderer.drawLander(lander, false);
+    expect(renderer.particles.length).toBe(0);
+  });
+  
+  it('should update and remove dead particles', () => {
+    renderer.particles = [
+      { x: 100, y: 100, vx: 1, vy: 1, life: 0.1, maxLife: 0.5 },
+      { x: 200, y: 200, vx: 1, vy: 1, life: -0.1, maxLife: 0.5 }
+    ];
+    
+    renderer.updateParticles();
+    expect(renderer.particles.length).toBe(1);
+    expect(renderer.particles[0].x).toBe(101);
+  });
+  
+  it('should limit particle count to 500', () => {
+    renderer.particles = new Array(600).fill(null).map(() => ({
+      x: 100, y: 100, vx: 0, vy: 0, life: 1, maxLife: 1
+    }));
+    
+    renderer.updateParticles();
+    expect(renderer.particles.length).toBe(500);
+  });
+  
+  it('should render particles without crashing', () => {
+    renderer.particles = [
+      { x: 100, y: 100, vx: 0, vy: 0, life: 0.5, maxLife: 0.5 }
+    ];
+    
+    expect(() => {
+      renderer.drawParticles();
+    }).not.toThrow();
+  });
+});

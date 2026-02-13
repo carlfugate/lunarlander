@@ -5,6 +5,7 @@ export class Renderer {
         this.width = canvas.width;
         this.height = canvas.height;
         this.camera = { x: 0, y: 0 };
+        this.particles = [];
         
         // Make canvas responsive
         this.setupResponsive();
@@ -82,6 +83,22 @@ export class Renderer {
         const x = lander.x - this.camera.x;
         const y = lander.y - this.camera.y;
         
+        // Emit particles when thrusting
+        if (thrusting && lander.fuel > 0) {
+            for (let i = 0; i < 3; i++) {
+                const angle = lander.rotation + (Math.random() - 0.5) * 0.3;
+                const speed = 2 + Math.random() * 2;
+                this.particles.push({
+                    x: lander.x,
+                    y: lander.y,
+                    vx: Math.sin(angle) * speed,
+                    vy: Math.cos(angle) * speed,
+                    life: 0.5,
+                    maxLife: 0.5
+                });
+            }
+        }
+        
         this.ctx.save();
         this.ctx.translate(x, y);
         this.ctx.rotate(lander.rotation);
@@ -107,6 +124,37 @@ export class Renderer {
         }
         
         this.ctx.restore();
+    }
+    
+    updateParticles(dt = 1/60) {
+        // Update and remove dead particles
+        this.particles = this.particles.filter(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= dt;
+            return p.life > 0;
+        });
+        
+        // Limit particle count
+        if (this.particles.length > 500) {
+            this.particles = this.particles.slice(-500);
+        }
+    }
+    
+    drawParticles() {
+        this.particles.forEach(p => {
+            const alpha = p.life / p.maxLife;
+            const size = 2 + alpha * 2;
+            const hue = 30 + alpha * 30; // Orange to yellow
+            
+            this.ctx.fillStyle = `hsla(${hue}, 100%, 50%, ${alpha})`;
+            this.ctx.fillRect(
+                p.x - this.camera.x - size/2,
+                p.y - this.camera.y - size/2,
+                size,
+                size
+            );
+        });
     }
     
     drawHUD(lander, altitude, speed, spectatorCount) {
@@ -239,7 +287,10 @@ export class Renderer {
             this.updateCamera(gameState.lander);
         }
         
+        this.updateParticles();
+        
         this.drawTerrain(gameState.terrain, gameState.lander);
+        this.drawParticles();
         this.drawLander(gameState.lander, thrusting);
         this.drawHUD(gameState.lander, gameState.altitude, gameState.speed, gameState.spectatorCount);
     }
