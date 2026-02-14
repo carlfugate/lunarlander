@@ -3,9 +3,12 @@ export class MobileControls {
     constructor(websocketManager) {
         this.ws = websocketManager;
         this.controlsDiv = document.getElementById('mobileControls');
+        this.menuControlsDiv = document.getElementById('mobileMenuControls');
         this.thrustBtn = document.getElementById('thrust');
         this.leftBtn = document.getElementById('rotateLeft');
         this.rightBtn = document.getElementById('rotateRight');
+        this.restartBtn = document.getElementById('mobileRestart');
+        this.menuBtn = document.getElementById('mobileMenu');
         this.swapBtn = document.getElementById('controlSwap');
         this.leftGroup = document.getElementById('leftControls');
         this.rightGroup = document.getElementById('rightControls');
@@ -13,6 +16,7 @@ export class MobileControls {
         this.thrustOnLeft = true; // Default: thrust on left
         this.loadPreference();
         this.setupControls();
+        this.setupMenuControls();
         this.setupSwapButton();
     }
     
@@ -47,6 +51,22 @@ export class MobileControls {
             this.thrustOnLeft = !this.thrustOnLeft;
             this.swapControls();
             this.savePreference();
+        });
+    }
+    
+    setupMenuControls() {
+        // Restart button (R key)
+        this.restartBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const event = new KeyboardEvent('keydown', { key: 'r' });
+            document.dispatchEvent(event);
+        });
+        
+        // Menu button (ESC key)
+        this.menuBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const event = new KeyboardEvent('keydown', { key: 'Escape' });
+            document.dispatchEvent(event);
         });
     }
     
@@ -109,6 +129,8 @@ export class MobileControls {
     show() {
         this.controlsDiv.classList.remove('hidden');
         this.controlsDiv.classList.add('visible');
+        this.menuControlsDiv.classList.remove('hidden');
+        this.menuControlsDiv.classList.add('visible');
         this.swapBtn.classList.remove('hidden');
         this.swapBtn.classList.add('visible');
     }
@@ -116,6 +138,8 @@ export class MobileControls {
     hide() {
         this.controlsDiv.classList.remove('visible');
         this.controlsDiv.classList.add('hidden');
+        this.menuControlsDiv.classList.remove('visible');
+        this.menuControlsDiv.classList.add('hidden');
         this.swapBtn.classList.remove('visible');
         this.swapBtn.classList.add('hidden');
     }
