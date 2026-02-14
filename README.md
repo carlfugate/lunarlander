@@ -20,9 +20,16 @@ A modern browser-based remake of the classic 1979 Atari Lunar Lander arcade game
 - **Maximum Score**: 3,600 points (perfect landing on Hard)
 
 ### Game Modes
-- **🎮 Play**: Control the lander with keyboard
+- **🎮 Play**: Control the lander with keyboard or touch
 - **👁️ Spectate**: Watch live games in real-time
 - **📹 Replay**: Watch recorded games
+
+### Mobile Support
+- **Touch Controls**: Optimized for mobile devices
+- **Landscape Mode**: Best experience in horizontal orientation
+- **Responsive Design**: Adapts to screen size
+- **Swappable Controls**: Choose left or right-handed layout
+- **Full Feature Parity**: All gameplay features available on mobile
 
 ### Live Spectating
 - Watch other players in real-time
@@ -70,10 +77,25 @@ Access via the ngrok URL - game works identically!
 ## 🎯 How to Play
 
 ### Controls
+
+**Desktop:**
 - **↑ Arrow Up**: Thrust (main engine)
 - **← → Arrow Left/Right**: Rotate lander
+- **P**: Pause/Resume
 - **R**: Restart after game over
 - **ESC**: Return to menu
+
+**Mobile (< 768px):**
+- **▲ Button**: Thrust (hold to thrust)
+- **◀ ▶ Buttons**: Rotate left/right
+- **↻ Button**: Restart (top-left)
+- **☰ Button**: Menu (top-left)
+- **⇄ Swap**: Switch control sides (preference saved)
+
+**Mobile Layout:**
+- Default: Thrust on left, Rotate on right
+- Optimized for landscape orientation
+- Touch-friendly button sizes
 
 ### Landing Requirements
 ✅ **Speed**: < 5.0 m/s total velocity  

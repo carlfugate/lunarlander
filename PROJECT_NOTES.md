@@ -3,9 +3,9 @@
 ## Overview
 Browser-based Lunar Lander game with dual human/AI support, featuring server-authoritative physics at 60Hz, real-time telemetry streaming, live spectator mode, and replay recording/playback.
 
-## Current Status: 95% Complete ✅
+## Current Status: 97% Complete ✅
 
-### Completed Features (Feb 13, 2026)
+### Completed Features (Feb 14, 2026)
 - ✅ Core gameplay with server-authoritative physics (60Hz)
 - ✅ WebSocket real-time communication
 - ✅ Live spectator mode with spectator count
@@ -26,8 +26,12 @@ Browser-based Lunar Lander game with dual human/AI support, featuring server-aut
 - ✅ Standard & Advanced telemetry modes
 - ✅ Configurable update rates (2-60 Hz for LLM support)
 - ✅ Test bots (simple rule-based + Ollama LLM)
+- ✅ Mobile touch controls (split layout with swap)
+- ✅ Mobile menu controls (restart, menu buttons)
+- ✅ Landscape/portrait optimization
+- ✅ Control preference persistence (localStorage)
 
-### Recent Work (Feb 13, 2026 - Phase 9 & AI Support)
+### Recent Work (Feb 13-14, 2026 - Phase 9 & AI Support & Mobile)
 
 **UI Improvements:**
 - Landing zone highlights with pulsing glow and proximity detection
@@ -56,6 +60,17 @@ Browser-based Lunar Lander game with dual human/AI support, featuring server-aut
 - Fixed explosion trigger (only on crash, not landed)
 - Fixed thrust effects after landing (disabled when landed/crashed)
 - Fixed terrain generation (exactly 1 landing zone, merged consecutive segments)
+- Fixed bot wall avoidance (using actual terrain width from server)
+- Fixed mobile control layout (split left/right with flexbox)
+- Fixed mobile button arrow consistency (filled triangles)
+
+**Mobile Controls (Phase 12 - Feb 14):**
+- Touch controls with split layout (thrust left, rotate right)
+- Swap button for control preference (saved in localStorage)
+- Menu controls (restart and menu buttons)
+- Landscape/portrait optimization
+- Responsive button sizing
+- Only shows on mobile devices (< 768px)
 
 ### Architecture
 ```
@@ -116,13 +131,14 @@ https://github.com/carlfugate/lunarlander
 
 ## Statistics
 
-- **Lines of Code**: ~4,000 (Python: 2,000, JavaScript: 2,000)
-- **Files**: 50+ source files
+- **Lines of Code**: ~4,200 (Python: 2,000, JavaScript: 2,200)
+- **Files**: 52 source files
 - **Tests**: 57 automated tests
-- **Commits**: 70+
-- **Development Time**: ~35 hours
+- **Commits**: 85+
+- **Development Time**: ~38 hours
 - **Max Score**: 3,600 points (perfect landing on Hard)
 - **Bots**: 2 (rule-based + LLM)
+- **Mobile Support**: ✅ Complete
 
 ## Ready For
 
@@ -168,16 +184,34 @@ https://github.com/carlfugate/lunarlander
 - Low fuel warning beep
 - UI click sounds
 
-### Phase 12: Mobile Controls (Optional)
-**Estimated Time**: 1-2 hours
+### Phase 12: Mobile Controls ✅ COMPLETE
+**Completed**: Feb 14, 2026
 
 **Features:**
-- Touch-based thrust button
-- Tilt-based rotation control
-- On-screen virtual joystick
-- Responsive layout for mobile screens
+- ✅ Touch controls with split layout
+- ✅ Swap button for control preference
+- ✅ Menu controls (restart, menu)
+- ✅ Landscape/portrait optimization
+- ✅ Responsive button sizing
+- ✅ localStorage preference persistence
 
-### Phase 13: Multiplayer Race Mode (Future)
+### Phase 13: Offline Mode (Planned)
+**Estimated Time**: 6-8 hours
+
+**Features:**
+- Dual-mode architecture (online/offline)
+- Client-side physics engine (port from Python)
+- Local game loop (60fps)
+- LocalStorage high scores
+- Automatic fallback when server unavailable
+- Feature parity with online mode (single-player)
+
+**Infrastructure Ready:**
+- Game constants documented
+- Physics logic well-defined
+- Clear separation of concerns
+
+### Phase 14: Multiplayer Race Mode (Future)
 **Estimated Time**: 8-10 hours
 
 **Features:**
