@@ -245,22 +245,26 @@ body {
     bottom: 20px;
     left: 0;
     right: 0;
+    width: 100%;
     display: none;
     flex-direction: row;
     justify-content: space-between;
+    align-items: flex-end;
     padding: 0 20px;
     z-index: 100;
     pointer-events: none;
+    box-sizing: border-box;
 }
 
 #mobileControls.visible {
-    display: flex;
+    display: flex !important;
 }
 
 .mobile-control-group {
     display: flex;
     gap: 15px;
     pointer-events: auto;
+    flex-shrink: 0;
 }
 
 .mobile-btn {
