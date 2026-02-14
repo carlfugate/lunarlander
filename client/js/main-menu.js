@@ -2,6 +2,7 @@ import { Renderer } from './renderer.js';
 import { WebSocketClient } from './websocket.js';
 import { InputHandler } from './input.js';
 import { ReplayPlayer } from './replay.js';
+import { MobileControls } from './mobile-controls.js';
 import config from './config.js';
 
 const canvas = document.getElementById('gameCanvas');
@@ -13,6 +14,7 @@ const modeIndicatorEl = document.getElementById('modeIndicator');
 
 let gameState = { terrain: null, lander: null, thrusting: false, altitude: 0, speed: 0 };
 let inputHandler = null;
+let mobileControls = null;
 let gameActive = false;
 let currentMode = null;
 let wsClient = null;
@@ -350,6 +352,8 @@ async function startGame(difficulty = 'simple') {
         await wsClient.connect();
         wsClient.startGame(difficulty);
         inputHandler = new InputHandler(wsClient, () => isPaused);
+        mobileControls = new MobileControls(wsClient);
+        mobileControls.show();
         statusEl.classList.remove('visible');
     } catch (error) {
         statusEl.textContent = 'Failed to connect';
@@ -397,6 +401,9 @@ function stopGameLoop() {
     if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
+    }
+    if (mobileControls) {
+        mobileControls.hide();
     }
 }
 
