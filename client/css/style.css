@@ -243,16 +243,24 @@ body {
 #mobileControls {
     position: fixed;
     bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex !important;
+    left: 0;
+    right: 0;
+    display: none;
     flex-direction: row;
-    gap: 20px;
+    justify-content: space-between;
+    padding: 0 20px;
     z-index: 100;
+    pointer-events: none;
 }
 
 #mobileControls.visible {
     display: flex;
+}
+
+.mobile-control-group {
+    display: flex;
+    gap: 15px;
+    pointer-events: auto;
 }
 
 .mobile-btn {
@@ -279,11 +287,59 @@ body {
     font-size: 48px;
 }
 
+#controlSwap {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    display: none;
+    padding: 8px 12px;
+    background: rgba(0, 255, 0, 0.2);
+    border: 1px solid #0f0;
+    color: #0f0;
+    border-radius: 5px;
+    font-size: 12px;
+    z-index: 101;
+}
+
+#controlSwap.visible {
+    display: block;
+}
+
 @media (max-width: 768px) {
-    #mobileControls {
+    #mobileControls.visible {
         display: flex;
     }
     
+    #controlSwap.visible {
+        display: block;
+    }
+}
+
+@media (max-width: 768px) and (orientation: landscape) {
+    canvas {
+        max-height: 100vh;
+        width: auto;
+    }
+    
+    #mobileControls {
+        bottom: 10px;
+        padding: 0 10px;
+    }
+    
+    .mobile-btn {
+        width: 70px;
+        height: 70px;
+        font-size: 32px;
+    }
+    
+    .mobile-btn.thrust-btn {
+        width: 90px;
+        height: 90px;
+        font-size: 42px;
+    }
+}
+
+@media (max-width: 768px) and (orientation: portrait) {
     canvas {
         max-width: 100%;
         height: auto;

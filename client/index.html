@@ -100,10 +100,15 @@
         </div>
         <!-- Mobile touch controls -->
         <div id="mobileControls" class="hidden">
-            <button id="rotateLeft" class="mobile-btn">◄</button>
-            <button id="thrust" class="mobile-btn thrust-btn">▲</button>
-            <button id="rotateRight" class="mobile-btn">►</button>
+            <div class="mobile-control-group" id="leftControls">
+                <button id="thrust" class="mobile-btn thrust-btn">▲</button>
+            </div>
+            <div class="mobile-control-group" id="rightControls">
+                <button id="rotateLeft" class="mobile-btn">◄</button>
+                <button id="rotateRight" class="mobile-btn">►</button>
+            </div>
         </div>
+        <button id="controlSwap" class="hidden">⇄ Swap</button>
     </div>
     <script type="module" src="js/main-menu.js"></script>
 </body>
