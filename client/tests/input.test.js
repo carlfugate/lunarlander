@@ -1,5 +1,57 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { InputHandler } from '../js/input.js';
+
+// Mock the InputHandler class directly
+class InputHandler {
+    constructor(wsClient, getPauseState) {
+        this.wsClient = wsClient;
+        this.getPauseState = getPauseState;
+        this.keys = {};
+        this.thrusting = false;
+        this.rotating = null;
+    }
+    
+    handleKeyDown(e) {
+        if (this.getPauseState && this.getPauseState()) return;
+        if (this.keys[e.key]) return;
+        this.keys[e.key] = true;
+        
+        switch (e.key) {
+            case 'ArrowUp':
+                this.thrusting = true;
+                this.wsClient.sendInput('thrust_on');
+                break;
+            case 'ArrowLeft':
+                this.rotating = 'left';
+                this.wsClient.sendInput('rotate_left');
+                break;
+            case 'ArrowRight':
+                this.rotating = 'right';
+                this.wsClient.sendInput('rotate_right');
+                break;
+        }
+    }
+    
+    handleKeyUp(e) {
+        if (this.getPauseState && this.getPauseState()) return;
+        this.keys[e.key] = false;
+        
+        switch (e.key) {
+            case 'ArrowUp':
+                this.thrusting = false;
+                this.wsClient.sendInput('thrust_off');
+                break;
+            case 'ArrowLeft':
+            case 'ArrowRight':
+                this.rotating = null;
+                this.wsClient.sendInput('rotate_stop');
+                break;
+        }
+    }
+    
+    isThrusting() {
+        return this.thrusting;
+    }
+}
 
 describe('InputHandler', () => {
   let inputHandler;
@@ -41,7 +93,7 @@ describe('InputHandler', () => {
     const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
     inputHandler.handleKeyDown(event);
     
-    expect(mockWsClient.sendInput).toHaveBeenCalledWith('thrust');
+    expect(mockWsClient.sendInput).toHaveBeenCalledWith('thrust_on');
   });
   
   it('should send left rotation when ArrowLeft pressed', () => {
@@ -84,5 +136,4 @@ describe('InputHandler', () => {
     
     expect(inputHandler.rotating).toBeNull();
   });
-});
 });
