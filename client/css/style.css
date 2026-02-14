@@ -246,6 +246,7 @@ body {
     left: 50%;
     transform: translateX(-50%);
     display: none;
+    flex-direction: row;
     gap: 20px;
     z-index: 100;
 }
@@ -281,5 +282,10 @@ body {
 @media (max-width: 768px) {
     #mobileControls {
         display: flex;
+    }
+    
+    canvas {
+        max-width: 100%;
+        height: auto;
     }
 }
