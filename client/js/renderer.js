@@ -182,17 +182,58 @@ export class Renderer {
         this.ctx.translate(x, y);
         this.ctx.rotate(lander.rotation);
         
-        // Draw lander body (triangle) - adjusted so bottom is at y position
-        this.ctx.fillStyle = lander.crashed ? '#f00' : lander.landed ? '#0f0' : '#fff';
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, -30);  // Top point
-        this.ctx.lineTo(-10, 0);   // Bottom left
-        this.ctx.lineTo(10, 0);    // Bottom right
-        this.ctx.closePath();
-        this.ctx.fill();
+        // Lunar module design
+        const crashed = lander.crashed;
+        const landed = lander.landed;
         
-        // Draw thrust flame (shorter)
-        if (thrusting && lander.fuel > 0 && !lander.crashed && !lander.landed) {
+        // Main body (rectangular)
+        this.ctx.fillStyle = crashed ? '#f00' : '#888';
+        this.ctx.fillRect(-12, -25, 24, 20);
+        
+        // Top section (command module)
+        this.ctx.fillStyle = crashed ? '#f00' : '#aaa';
+        this.ctx.fillRect(-8, -30, 16, 5);
+        
+        // Windows
+        this.ctx.fillStyle = landed ? '#0f0' : '#4af';
+        this.ctx.fillRect(-6, -28, 4, 2);
+        this.ctx.fillRect(2, -28, 4, 2);
+        
+        // Landing legs (4 legs)
+        this.ctx.strokeStyle = crashed ? '#f00' : '#666';
+        this.ctx.lineWidth = 2;
+        
+        // Left legs
+        this.ctx.beginPath();
+        this.ctx.moveTo(-10, -5);
+        this.ctx.lineTo(-16, 0);
+        this.ctx.lineTo(-18, 0);
+        this.ctx.stroke();
+        
+        // Right legs
+        this.ctx.beginPath();
+        this.ctx.moveTo(10, -5);
+        this.ctx.lineTo(16, 0);
+        this.ctx.lineTo(18, 0);
+        this.ctx.stroke();
+        
+        // Status light (top)
+        if (!crashed) {
+            this.ctx.fillStyle = landed ? '#0f0' : (thrusting ? '#f80' : '#f00');
+            this.ctx.beginPath();
+            this.ctx.arc(0, -32, 2, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+        
+        // Thruster glow
+        if (thrusting && lander.fuel > 0 && !crashed && !landed) {
+            const flicker = 0.8 + Math.random() * 0.4;
+            this.ctx.fillStyle = `rgba(100, 200, 255, ${flicker})`;
+            this.ctx.beginPath();
+            this.ctx.arc(0, -5, 6, 0, Math.PI * 2);
+            this.ctx.fill();
+            
+            // Flame
             this.ctx.fillStyle = '#ff0';
             this.ctx.beginPath();
             this.ctx.moveTo(-5, 0);

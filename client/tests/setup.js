@@ -31,6 +31,7 @@ const mockContext = {
   fillText: () => {},
   measureText: (text) => ({ width: text.length * 10 }),
   getImageData: () => ({ data: [0, 0, 0, 255] }),
+  arc: () => {},
 };
 
 // Mock HTMLCanvasElement
