@@ -1,3 +1,47 @@
+/**
+ * @typedef {Object} Lander
+ * @property {number} x - X position
+ * @property {number} y - Y position
+ * @property {number} vx - X velocity
+ * @property {number} vy - Y velocity
+ * @property {number} rotation - Rotation in degrees
+ * @property {number} fuel - Remaining fuel
+ */
+
+/**
+ * @typedef {Object} GameState
+ * @property {Array<{x: number, y: number}>|null} terrain - Terrain points
+ * @property {Lander|null} lander - Lander state
+ * @property {boolean} thrusting - Is thrust active
+ * @property {number} altitude - Current altitude
+ * @property {number} speed - Current speed
+ * @property {number} [spectatorCount] - Number of spectators
+ */
+
+/**
+ * @typedef {Object} TelemetryData
+ * @property {string} type - Message type
+ * @property {Lander} lander - Lander state
+ * @property {number} altitude - Altitude above ground
+ * @property {number} speed - Current speed
+ * @property {boolean} thrusting - Thrust status
+ * @property {number} timestamp - Game timestamp
+ * @property {number} [spectator_count] - Number of spectators
+ * @property {Object} [nearest_landing_zone] - Nearest landing zone info
+ */
+
+/**
+ * @typedef {Object} GameOverData
+ * @property {string} type - Message type
+ * @property {boolean} landed - Successfully landed
+ * @property {boolean} crashed - Crashed
+ * @property {number} time - Game duration
+ * @property {number} fuel_remaining - Fuel left
+ * @property {number} inputs - Number of inputs
+ * @property {number} score - Final score
+ * @property {string} replay_id - Replay identifier
+ */
+
 import { Renderer } from './renderer.js';
 import { WebSocketClient } from './websocket.js';
 import { InputHandler } from './input.js';
@@ -15,8 +59,11 @@ const menuEl = document.getElementById('menu');
 const appEl = document.getElementById('app');
 const modeIndicatorEl = document.getElementById('modeIndicator');
 
+/** @type {GameState} */
 let gameState = { terrain: null, lander: null, thrusting: false, altitude: 0, speed: 0 };
+/** @type {InputHandler|null} */
 let inputHandler = null;
+/** @type {MobileControls|null} */
 let mobileControls = null;
 let gameActive = false;
 let currentMode = null;
@@ -88,6 +135,10 @@ document.getElementById('backFromReplays').addEventListener('click', () => {
     document.getElementById('replayList').classList.add('hidden');
 });
 
+/**
+ * Load list of active games for spectating
+ * @returns {Promise<void>}
+ */
 async function loadActiveGames() {
     const listEl = document.getElementById('gameListContent');
     listEl.innerHTML = '<p>Loading games...</p>';
@@ -137,6 +188,10 @@ async function loadActiveGames() {
     }
 }
 
+/**
+ * Load list of available replays
+ * @returns {Promise<void>}
+ */
 async function loadReplays() {
     const listEl = document.getElementById('replayListContent');
     listEl.innerHTML = '<p>Loading replays...</p>';
@@ -194,6 +249,10 @@ async function loadReplays() {
 
 let isConnecting = false;
 
+/**
+ * Start spectating a live game
+ * @param {string} sessionId - Game session ID to spectate
+ */
 function spectateGame(sessionId) {
     if (isConnecting) return;
     isConnecting = true;
@@ -243,6 +302,11 @@ function spectateGame(sessionId) {
 
 let isLoadingReplay = false;
 
+/**
+ * Play a recorded replay
+ * @param {string} replayId - Replay ID to play
+ * @returns {Promise<void>}
+ */
 async function playReplay(replayId) {
     if (isLoadingReplay) return;
     isLoadingReplay = true;
@@ -306,6 +370,11 @@ async function playReplay(replayId) {
 }
 
 // Play mode WebSocket
+/**
+ * Start a new game with specified difficulty
+ * @param {string} [difficulty='simple'] - Difficulty level (simple, medium, hard)
+ * @returns {Promise<void>}
+ */
 async function startGame(difficulty = 'simple') {
     try {
         stopGameLoop();

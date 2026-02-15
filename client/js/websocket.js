@@ -1,6 +1,13 @@
 import { logger } from './logger.js';
 
+/**
+ * WebSocket client for game communication
+ */
 export class WebSocketClient {
+    /**
+     * Create a WebSocket client
+     * @param {string} url - WebSocket server URL
+     */
     constructor(url) {
         this.url = url;
         this.ws = null;
@@ -11,6 +18,11 @@ export class WebSocketClient {
         this.onError = null;
     }
     
+    /**
+     * Connect to WebSocket server with retry logic
+     * @param {number} [maxRetries=3] - Maximum connection attempts
+     * @returns {Promise<void>}
+     */
     async connect(maxRetries = 3) {
         for (let attempt = 0; attempt < maxRetries; attempt++) {
             try {
@@ -61,6 +73,11 @@ export class WebSocketClient {
         });
     }
     
+    /**
+     * Handle incoming WebSocket message
+     * @param {Object} data - Message data
+     * @param {string} data.type - Message type (init, telemetry, game_over, error)
+     */
     handleMessage(data) {
         logger.debug('WS Receive:', { type: data.type, data });
         
@@ -81,6 +98,13 @@ export class WebSocketClient {
         }
     }
     
+    /**
+     * Start a new game
+     * @param {string} [difficulty='simple'] - Difficulty level
+     * @param {string|null} [token=null] - Authentication token
+     * @param {string} [telemetryMode='standard'] - Telemetry mode
+     * @param {number} [updateRate=60] - Update rate in Hz
+     */
     startGame(difficulty = 'simple', token = null, telemetryMode = 'standard', updateRate = 60) {
         const message = {
             type: 'start',
@@ -101,6 +125,10 @@ export class WebSocketClient {
         });
     }
     
+    /**
+     * Send data to server
+     * @param {Object} data - Data to send
+     */
     send(data) {
         if (this.connected && this.ws.readyState === WebSocket.OPEN) {
             logger.debug('WS Send:', data);
