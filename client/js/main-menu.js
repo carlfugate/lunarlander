@@ -353,6 +353,8 @@ async function startGame(difficulty = 'simple') {
             statusEl.classList.add('visible');
             console.log('statusEl classes:', statusEl.className);
             console.log('statusEl computed display:', window.getComputedStyle(statusEl).display);
+            console.log('statusEl position:', statusEl.getBoundingClientRect());
+            console.log('statusEl innerHTML length:', statusEl.innerHTML.length);
         };
         
         await wsClient.connect();
