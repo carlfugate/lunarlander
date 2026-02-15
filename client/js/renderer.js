@@ -487,7 +487,9 @@ export class Renderer {
             this.drawHUD(gameState.lander, gameState.altitude, gameState.speed, gameState.spectatorCount);
         } else if (gameState.players) {
             // Multiplayer mode
+            console.log(`Rendering multiplayer mode with ${Object.keys(gameState.players).length} players`);
             for (const [playerId, player] of Object.entries(gameState.players)) {
+                console.log(`Player: ${player.name}, Color: ${player.color}`);
                 this.drawLander(player.lander, player.thrusting, player.color, player.name);
             }
         }

@@ -65,14 +65,97 @@ window.perfMonitor = perfMonitor;
 // Global helper function for joining rooms from console
 window.joinRoom = async function(roomId, playerName = 'Player2') {
     try {
-        if (!wsClient) {
-            const wsUrl = `${config.WS_PROTOCOL}//${config.WS_HOST}/ws`;
-            wsClient = new WebSocketClient(wsUrl);
-        }
+        stopGameLoop();
+        renderer.reset();
+        statusEl.textContent = 'Connecting...';
+        statusEl.classList.add('visible');
+        
+        const wsUrl = `${config.WS_PROTOCOL}//${config.WS_HOST}/ws`;
+        wsClient = new WebSocketClient(wsUrl);
+        
+        wsClient.onInit = (data) => {
+            console.log('Received init message:', data);
+            stateManager.setState({ terrain: data.terrain, lander: data.lander, thrusting: false });
+            gameActive = true;
+            statusEl.classList.remove('visible');
+            startGameLoop();
+            isConnecting = false;
+            console.log('Game loop started, gameState:', gameState);
+        };
+        
+        wsClient.onTelemetry = (data) => {
+            const stateUpdate = {
+                terrain: data.terrain || stateManager.state.terrain,
+                thrusting: data.thrusting || false,
+                altitude: data.altitude || 0,
+                speed: data.speed || 0,
+                spectatorCount: data.spectator_count
+            };
+            
+            if (data.players) {
+                stateUpdate.players = data.players;
+                stateUpdate.lander = null;
+            } else {
+                stateUpdate.lander = data.lander;
+                stateUpdate.players = null;
+            }
+            
+            stateManager.setState(stateUpdate);
+            devTools.update(gameState);
+        };
+        
+        wsClient.onGameOver = (data) => {
+            gameActive = false;
+            const result = data.landed ? 'LANDED!' : 'CRASHED!';
+            const score = data.score || 0;
+            const scoreText = data.landed ? `Score: ${score}` : '';
+            const stats = `Time: ${data.time.toFixed(1)}s | Fuel: ${data.fuel_remaining.toFixed(0)} | Inputs: ${data.inputs}`;
+            statusEl.innerHTML = `
+                <div style="font-size: 24px;">${result}</div>
+                ${scoreText ? `<div style="font-size: 20px; margin: 10px 0;">${scoreText}</div>` : ''}
+                <div>${stats}</div>
+                <div>Press R to restart | ESC for menu</div>
+            `;
+            statusEl.style.color = data.landed ? '#0f0' : '#f00';
+            statusEl.style.borderColor = data.landed ? '#0f0' : '#f00';
+            statusEl.classList.remove('hidden');
+            statusEl.classList.add('visible');
+        };
+        
+        menuEl.classList.add('hidden');
+        appEl.classList.remove('hidden');
+        appEl.style.display = 'block';
+        menuEl.style.display = 'none';
+        currentMode = 'play';
+        modeIndicatorEl.textContent = 'PLAYING';
+        window.dispatchEvent(new Event('resize'));
+        
+        await wsClient.connect();
         await wsClient.joinRoom(roomId, playerName);
+        inputHandler = new InputHandler(wsClient, () => isPaused);
+        
+        const isMobile = window.innerWidth <= 768 || 
+                        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        devTools.setStatus('devWsStatus', 'Connected', 'ok');
+        devTools.setText('devMobile', isMobile ? 'Yes' : 'No');
+        devTools.setText('devDebugMode', localStorage.getItem('debug') === 'true' ? 'On' : 'Off');
+        
+        if (isMobile) {
+            try {
+                mobileControls = new MobileControls(wsClient);
+                mobileControls.show();
+                logger.info('Mobile controls initialized and shown');
+            } catch (error) {
+                console.error('Error initializing mobile controls:', error);
+            }
+        }
+        
         console.log(`Joined room ${roomId} as ${playerName}`);
     } catch (error) {
         console.error('Failed to join room:', error);
+        statusEl.textContent = 'Failed to connect';
+        statusEl.classList.add('visible');
     }
 };
 const appEl = document.getElementById('app');

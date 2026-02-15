@@ -169,6 +169,12 @@ export class WebSocketClient {
                 room_id: roomId,
                 player_name: playerName
             });
+            
+            // Trigger game UI start after joining room
+            if (this.onInit) {
+                this.onInit({ terrain: null, lander: null });
+            }
+            
             resolve();
         });
     }
