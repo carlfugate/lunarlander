@@ -274,8 +274,8 @@ function spectateGame(sessionId) {
                 startGameLoop();
                 isConnecting = false;
             },
-            (result) => {
-                statusEl.innerHTML = `<div style="font-size: 24px;">${result}</div><div>Press ESC for menu</div>`;
+            (result, scoreText) => {
+                statusEl.innerHTML = `<div style="font-size: 24px;">${result}</div>${scoreText}<div>Press ESC for menu</div>`;
                 statusEl.classList.add('visible');
             }
         );
