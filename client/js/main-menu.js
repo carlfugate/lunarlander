@@ -60,8 +60,6 @@ const menuEl = document.getElementById('menu');
 const appEl = document.getElementById('app');
 const modeIndicatorEl = document.getElementById('modeIndicator');
 
-/** @type {GameState} */
-let gameState = stateManager.state;
 /** @type {InputHandler|null} */
 let inputHandler = null;
 /** @type {MobileControls|null} */
@@ -511,7 +509,7 @@ document.addEventListener('keydown', (e) => {
         document.getElementById('replayList').classList.add('hidden');
         document.getElementById('helpScreen').classList.add('hidden');
         statusEl.classList.remove('visible');
-        gameState = { terrain: null, lander: null, thrusting: false, altitude: 0, speed: 0 };
+        stateManager.reset();
     }
 });
 
