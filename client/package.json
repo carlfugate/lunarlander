@@ -11,12 +11,15 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "lint:css": "stylelint 'css/**/*.css'",
-    "validate": "npm run lint:css && npm test -- --run"
+    "lint:js": "eslint 'js/**/*.js'",
+    "lint": "npm run lint:css && npm run lint:js",
+    "validate": "npm run lint && npm test -- --run"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
     "@sentry/browser": "^10.38.0",
     "@vitest/ui": "^1.0.0",
+    "eslint": "^10.0.0",
     "jsdom": "^23.0.0",
     "stylelint": "^17.3.0",
     "stylelint-config-standard": "^40.0.0",
