@@ -272,36 +272,22 @@ function spectateGame(sessionId) {
     modeIndicatorEl.textContent = 'SPECTATING';
     window.dispatchEvent(new Event('resize'));
     
-    const wsUrl = `${config.WS_PROTOCOL}//${config.WS_HOST}/spectate/${sessionId}`;
-    wsClient = new WebSocketClient(wsUrl);
-    
-    wsClient.onInit = (data) => {
-        stateManager.setState({ terrain: data.terrain, lander: data.lander, thrusting: false });
-        startGameLoop();
+    // Lazy load spectate module
+    import('./modes/spectate.js').then(({ startSpectate }) => {
+        wsClient = startSpectate(
+            sessionId,
+            () => {
+                startGameLoop();
+                isConnecting = false;
+            },
+            (result) => {
+                statusEl.innerHTML = `<div style="font-size: 24px;">${result}</div><div>Press ESC for menu</div>`;
+                statusEl.classList.add('visible');
+            }
+        );
+    }).catch(() => {
         isConnecting = false;
-    };
-    
-    wsClient.onTelemetry = (data) => {
-        stateManager.setState({
-            lander: data.lander,
-            thrusting: data.thrusting || false,
-            altitude: data.altitude || 0,
-            speed: data.speed || 0,
-            spectatorCount: data.spectator_count
-        });
-    };
-    
-    wsClient.onGameOver = (data) => {
-        const result = data.landed ? 'LANDED!' : 'CRASHED!';
-        const score = data.score || 0;
-        const scoreText = data.landed ? `<div style="font-size: 20px; margin: 10px 0;">Score: ${score}</div>` : '';
-        statusEl.innerHTML = `<div style="font-size: 24px;">${result}</div>${scoreText}<div>Press ESC for menu</div>`;
-        statusEl.classList.add('visible');
-    };
-    
-    wsClient.connect().catch(() => {
-        isConnecting = false;
-        statusEl.innerHTML = '<div style="color: #f00;">Failed to connect. Press ESC for menu.</div>';
+        statusEl.innerHTML = '<div style="color: #f00;">Failed to load. Press ESC for menu.</div>';
         statusEl.classList.add('visible');
     });
 }
@@ -327,47 +313,20 @@ async function playReplay(replayId) {
     window.dispatchEvent(new Event('resize'));
     
     try {
-        // Fetch replay data
-        const response = await fetch(`${config.API_URL}/replay/${replayId}`);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const replayData = await response.json();
+        // Lazy load replay module
+        const { startReplay } = await import('./modes/replay.js');
         
-        // Set up game state with replay terrain
-        stateManager.setState({ terrain: replayData.metadata.terrain, lander: null });
-        
-        // Create replay player
-        const replayPlayer = new ReplayPlayer(replayData);
-        
-        // Play the replay
-        let frameIndex = 0;
-        const playbackSpeed = 1.0; // 1x speed
-        const frameDelay = (1000 / 30) / playbackSpeed; // 30Hz playback
-        
-        startGameLoop();
-        isLoadingReplay = false;
-        
-        function replayLoop() {
-            if (currentMode !== 'replay') return; // Stop if mode changed
-            
-            if (frameIndex >= replayData.frames.length) {
+        await startReplay(
+            replayId,
+            () => {
+                startGameLoop();
+                isLoadingReplay = false;
+            },
+            () => {
                 statusEl.innerHTML = `<div style="font-size: 24px;">REPLAY ENDED</div><div>Press ESC for menu</div>`;
                 statusEl.classList.add('visible');
-                return;
             }
-            
-            const frame = replayData.frames[frameIndex];
-            stateManager.setState({
-                lander: frame.lander,
-                altitude: frame.altitude || 0,
-                speed: frame.speed || 0,
-                thrusting: frame.thrusting || false
-            });
-            
-            frameIndex++;
-            setTimeout(() => requestAnimationFrame(replayLoop), frameDelay);
-        }
-        
-        replayLoop();
+        );
     } catch (error) {
         console.error('Failed to load replay:', error);
         statusEl.innerHTML = '<p style="color: #f00;">Failed to load replay. Press ESC for menu.</p>';
