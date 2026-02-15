@@ -231,6 +231,7 @@ async def websocket_endpoint(websocket: WebSocket):
             difficulty = message.get("difficulty", "simple")
             telemetry_mode = message.get("telemetry_mode", "standard")
             update_rate = message.get("update_rate", 60)
+            player_name = message.get("player_name", "Player")
             
             # Bot metadata (optional)
             bot_name = message.get("bot_name", None)
@@ -253,7 +254,17 @@ async def websocket_endpoint(websocket: WebSocket):
             session.bot_name = bot_name
             session.bot_version = bot_version
             session.bot_author = bot_author
+            
+            # Update default player name
+            session.players["default"]["name"] = player_name
+            
             sessions[session_id] = session
+            
+            # Send room_id back to client
+            await websocket.send_text(json.dumps({
+                "type": "room_created",
+                "room_id": session_id
+            }))
             
             # Send initial state
             await session.send_initial_state()
@@ -261,8 +272,59 @@ async def websocket_endpoint(websocket: WebSocket):
             # Start game loop in background
             game_task = asyncio.create_task(session.start())
             
+        elif message.get("type") == "join_room":
+            room_id = message.get("room_id")
+            player_name = message.get("player_name", "Player")
+            
+            if not room_id or room_id not in sessions:
+                await websocket.send_text(json.dumps({
+                    "type": "error",
+                    "message": "Room not found"
+                }))
+                await websocket.close()
+                return
+            
+            session = sessions[room_id]
+            session_id = room_id
+            
+            # Color palette
+            colors = ['#fff', '#0ff', '#ff0', '#f0f', '#0f0', '#f80', '#80f', '#f00']
+            player_color = colors[len(session.players) % len(colors)]
+            
+            # Add player to session
+            player_id = str(uuid.uuid4())
+            session.add_player(player_id, websocket, player_name, player_color)
+            
+            # Broadcast player_joined to all players
+            join_message = {
+                "type": "player_joined",
+                "player_id": player_id,
+                "player_name": player_name,
+                "player_color": player_color
+            }
+            
+            for pid, player in session.players.items():
+                try:
+                    await player['websocket'].send_text(json.dumps(join_message))
+                except:
+                    pass
+            
+            # Send initial state to new player
+            await session.send_initial_state()
+            
+            # No game loop needed - joining existing session
+            game_task = None
+            
             # Handle incoming messages in parallel
             async def handle_messages():
+                current_player_id = "default"  # Default for room creators
+                
+                # Find current player ID for joiners
+                for pid, player in session.players.items():
+                    if player['websocket'] == websocket:
+                        current_player_id = pid
+                        break
+                
                 while session.running:
                     try:
                         data = await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
@@ -282,7 +344,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             action = msg.get("action")
                             # Validate action
                             if action in ["thrust", "thrust_on", "thrust_off", "rotate_left", "rotate_right", "rotate_stop"]:
-                                session.handle_input(action)
+                                session.handle_input(action, current_player_id)
                             else:
                                 print(f"Invalid action from {session_id}: {action}")
                         elif msg.get("type") == "ping":
@@ -297,11 +359,15 @@ async def websocket_endpoint(websocket: WebSocket):
                         print(f"Message handling error: {e}")
                         break
             
-            message_task = asyncio.create_task(handle_messages())
-            
-            # Wait for game to end
-            await game_task
-            message_task.cancel()
+            if game_task:
+                message_task = asyncio.create_task(handle_messages())
+                
+                # Wait for game to end
+                await game_task
+                message_task.cancel()
+            else:
+                # Just handle messages for joiners
+                await handle_messages()
             
     except WebSocketDisconnect:
         print(f"Client disconnected: {session_id}")
@@ -311,20 +377,49 @@ async def websocket_endpoint(websocket: WebSocket):
         traceback.print_exc()
     finally:
         if session_id in sessions:
-            # Save replay before deleting session
-            if session and session.replay:
-                replay_id = f"{session_id}_{int(time.time())}"
+            session = sessions[session_id]
+            
+            # Find and remove disconnected player
+            disconnected_player_id = None
+            disconnected_player_name = None
+            
+            for pid, player in list(session.players.items()):
+                if player['websocket'] == websocket:
+                    disconnected_player_id = pid
+                    disconnected_player_name = player['name']
+                    session.remove_player(pid)
+                    break
+            
+            # Broadcast player_left to remaining players
+            if disconnected_player_id and session.players:
+                left_message = {
+                    "type": "player_left",
+                    "player_id": disconnected_player_id,
+                    "player_name": disconnected_player_name
+                }
                 
-                # Enforce replay limit
-                if len(replays) >= MAX_REPLAYS:
-                    # Remove oldest replay
-                    oldest_id = min(replays.keys(), key=lambda k: replays[k]['metadata'].get('timestamp', 0))
-                    del replays[oldest_id]
-                    print(f"Removed oldest replay: {oldest_id}")
-                
-                replays[replay_id] = session.replay.to_dict()
-                print(f"Saved replay: {replay_id}")
-                print(f"Total replays in memory: {len(replays)}")
-            else:
-                print(f"No replay to save for session {session_id}")
-            del sessions[session_id]
+                for pid, player in session.players.items():
+                    try:
+                        await player['websocket'].send_text(json.dumps(left_message))
+                    except:
+                        pass
+            
+            # Save replay and cleanup if no players left
+            if not session.players:
+                # Save replay before deleting session
+                if session and session.replay:
+                    replay_id = f"{session_id}_{int(time.time())}"
+                    
+                    # Enforce replay limit
+                    if len(replays) >= MAX_REPLAYS:
+                        # Remove oldest replay
+                        oldest_id = min(replays.keys(), key=lambda k: replays[k]['metadata'].get('timestamp', 0))
+                        del replays[oldest_id]
+                        print(f"Removed oldest replay: {oldest_id}")
+                    
+                    replays[replay_id] = session.replay.to_dict()
+                    print(f"Saved replay: {replay_id}")
+                    print(f"Total replays in memory: {len(replays)}")
+                else:
+                    print(f"No replay to save for session {session_id}")
+                del sessions[session_id]

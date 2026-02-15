@@ -12,14 +12,31 @@ class GameSession:
         self.difficulty = difficulty
         self.telemetry_mode = telemetry_mode  # "standard" or "advanced"
         self.update_rate = update_rate  # Hz: 60 for humans/bots, 2-10 for LLMs
-        self.lander = Lander()
+        
+        # Multiplayer support - players dictionary
+        self.players = {}
+        
+        # Backward compatibility - create default player
+        default_player_id = "default"
+        self.players[default_player_id] = {
+            'lander': Lander(),
+            'thrust': False,
+            'rotate': None,
+            'websocket': websocket,
+            'name': 'Player',
+            'color': '#00ff00'
+        }
+        
+        # Keep reference for backward compatibility
+        self.lander = self.players[default_player_id]['lander']
+        self.current_thrust = False
+        self.current_rotate = None
+        
         self.terrain = Terrain(difficulty=difficulty)
         self.running = False
         self.start_time = None
         self.input_count = 0
         self.last_update = time.time()
-        self.current_thrust = False
-        self.current_rotate = None
         self.user_id = "anonymous"
         self.replay = None
         self.record_replay = True  # Enable replay recording
@@ -49,10 +66,28 @@ class GameSession:
         while self.running:
             loop_start = time.time()
             
-            # Update physics with current input state
-            self.lander.update(dt, self.current_thrust, self.current_rotate)
+            # Update physics for all players
+            for player_id, player in self.players.items():
+                lander = player['lander']
+                lander.update(dt, player['thrust'], player['rotate'])
+                
+                # Check collision
+                terrain_y = self.terrain.get_height_at(lander.x)
+                is_landing, multiplier = self.terrain.is_landing_zone(lander.x)
+                lander.check_collision(terrain_y, is_landing)
+                
+                # Check bounds
+                if lander.x < 0 or lander.x > self.terrain.width:
+                    lander.crashed = True
             
-            # Calculate altitude and speed for replay
+            # Update backward compatibility references (use first player)
+            if self.players:
+                first_player = next(iter(self.players.values()))
+                self.lander = first_player['lander']
+                self.current_thrust = first_player['thrust']
+                self.current_rotate = first_player['rotate']
+            
+            # Calculate altitude and speed for replay (backward compatibility)
             terrain_height = self.terrain.get_height_at(self.lander.x)
             altitude = terrain_height - self.lander.y
             import math
@@ -62,24 +97,16 @@ class GameSession:
             if self.replay:
                 self.replay.record_frame(self.lander.to_dict(), terrain_height, altitude, speed, self.current_thrust)
             
-            # Check collision
-            terrain_y = self.terrain.get_height_at(self.lander.x)
-            is_landing, multiplier = self.terrain.is_landing_zone(self.lander.x)
-            
             # Debug: print terrain info every 2 seconds
             current_time = time.time()
             if int(current_time * 0.5) % 2 == 0 and int((current_time - 0.016) * 0.5) % 2 != 0:
                 speed = (self.lander.vx**2 + self.lander.vy**2)**0.5
-                print(f"[{current_time:.3f}] Alt: {800-self.lander.y:.0f}, Speed: {speed:.1f}, X: {self.lander.x:.0f}, Landing: {is_landing}")
+                print(f"[{current_time:.3f}] Alt: {800-self.lander.y:.0f}, Speed: {speed:.1f}, X: {self.lander.x:.0f}, Landing: {self.terrain.is_landing_zone(self.lander.x)[0]}")
             
-            self.lander.check_collision(terrain_y, is_landing)
+            # Check game over (any player crashed/landed ends game for now)
+            game_over = any(player['lander'].crashed or player['lander'].landed for player in self.players.values())
             
-            # Check bounds
-            if self.lander.x < 0 or self.lander.x > self.terrain.width:
-                self.lander.crashed = True
-            
-            # Check game over
-            if self.lander.crashed or self.lander.landed:
+            if game_over:
                 # Send final telemetry with crashed/landed state
                 await self.send_telemetry(send_to_spectators=True)
                 await self.send_game_over()
@@ -102,7 +129,7 @@ class GameSession:
             await asyncio.sleep(sleep_time)
             
     async def send_telemetry(self, send_to_spectators=True):
-        # Find nearest landing zone
+        # Find nearest landing zone (using first player for backward compatibility)
         nearest_zone = None
         min_distance = float('inf')
         
@@ -129,11 +156,23 @@ class GameSession:
         import math
         speed = math.sqrt(self.lander.vx**2 + self.lander.vy**2)
         
+        # Collect all players' states
+        players_data = {}
+        for player_id, player in self.players.items():
+            lander = player['lander']
+            players_data[player_id] = {
+                'lander': lander.to_dict(),
+                'name': player['name'],
+                'color': player['color'],
+                'thrusting': player['thrust']
+            }
+        
         # Standard telemetry (always included)
         message = {
             "type": "telemetry",
             "timestamp": time.time(),
-            "lander": self.lander.to_dict(),
+            "lander": self.lander.to_dict(),  # Backward compatibility
+            "players": players_data,  # New multiplayer data
             "terrain_height": terrain_height,
             "altitude": altitude_above_terrain,
             "speed": speed,
@@ -297,26 +336,66 @@ class GameSession:
             except:
                 self.spectators.remove(spectator_ws)
         
-    def handle_input(self, action):
+    def handle_input(self, action, player_id="default"):
         self.input_count += 1
+        
+        # Get player or use default
+        if player_id not in self.players:
+            player_id = "default"
+        
+        player = self.players[player_id]
+        
         # Only log state changes, not every input
         if action == "thrust" or action == "thrust_on":
-            if not self.current_thrust:
-                print(f"[{time.time():.3f}] THRUST ON")
-            self.current_thrust = True
+            if not player['thrust']:
+                print(f"[{time.time():.3f}] THRUST ON (Player: {player_id})")
+            player['thrust'] = True
         elif action == "thrust_off":
-            if self.current_thrust:
-                print(f"[{time.time():.3f}] THRUST OFF")
-            self.current_thrust = False
+            if player['thrust']:
+                print(f"[{time.time():.3f}] THRUST OFF (Player: {player_id})")
+            player['thrust'] = False
         elif action == "rotate_left":
-            if self.current_rotate != "left":
-                print(f"[{time.time():.3f}] ROTATE LEFT")
-            self.current_rotate = "left"
+            if player['rotate'] != "left":
+                print(f"[{time.time():.3f}] ROTATE LEFT (Player: {player_id})")
+            player['rotate'] = "left"
         elif action == "rotate_right":
-            if self.current_rotate != "right":
-                print(f"[{time.time():.3f}] ROTATE RIGHT")
-            self.current_rotate = "right"
+            if player['rotate'] != "right":
+                print(f"[{time.time():.3f}] ROTATE RIGHT (Player: {player_id})")
+            player['rotate'] = "right"
         elif action == "rotate_stop":
-            if self.current_rotate is not None:
-                print(f"[{time.time():.3f}] ROTATE STOP")
-            self.current_rotate = None
+            if player['rotate'] is not None:
+                print(f"[{time.time():.3f}] ROTATE STOP (Player: {player_id})")
+            player['rotate'] = None
+        
+        # Update backward compatibility references if this is the default player
+        if player_id == "default":
+            self.current_thrust = player['thrust']
+            self.current_rotate = player['rotate']
+    
+    def add_player(self, player_id, websocket, name, color):
+        """Add a new player to the game session"""
+        self.players[player_id] = {
+            'lander': Lander(),
+            'thrust': False,
+            'rotate': None,
+            'websocket': websocket,
+            'name': name,
+            'color': color
+        }
+        print(f"[{time.time():.3f}] Player {player_id} ({name}) joined")
+    
+    def remove_player(self, player_id):
+        """Remove a player from the game session"""
+        if player_id in self.players:
+            player_name = self.players[player_id]['name']
+            del self.players[player_id]
+            print(f"[{time.time():.3f}] Player {player_id} ({player_name}) left")
+            
+            # If removing default player and others exist, promote first remaining player
+            if player_id == "default" and self.players:
+                first_player_id = next(iter(self.players.keys()))
+                first_player = self.players[first_player_id]
+                self.lander = first_player['lander']
+                self.current_thrust = first_player['thrust']
+                self.current_rotate = first_player['rotate']
+                self.websocket = first_player['websocket']
