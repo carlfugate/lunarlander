@@ -15,6 +15,7 @@ export class MobileControls {
         
         this.thrustOnLeft = true; // Default: thrust on left
         this.loadPreference();
+        this.swapControls(); // Initialize layout
         this.setupControls();
         this.setupMenuControls();
         this.setupSwapButton();
