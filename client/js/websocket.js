@@ -81,6 +81,14 @@ export class WebSocketClient {
     handleMessage(data) {
         logger.debug('WS Receive:', { type: data.type, data });
         
+        // Track latency if timestamp present
+        if (data.timestamp) {
+            const latency = Date.now() - data.timestamp;
+            if (window.perfMonitor) {
+                window.perfMonitor.recordLatency(latency);
+            }
+        }
+        
         switch (data.type) {
             case 'init':
                 if (this.onInit) this.onInit(data);

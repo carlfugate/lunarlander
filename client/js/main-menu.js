@@ -50,6 +50,7 @@ import { MobileControls } from './mobile-controls.js';
 import { DevTools } from './devtools.js';
 import { logger } from './logger.js';
 import { stateManager } from './state.js';
+import { perfMonitor } from './performance.js';
 import config from './config.js';
 
 const canvas = document.getElementById('gameCanvas');
@@ -57,6 +58,9 @@ const renderer = new Renderer(canvas);
 const statusEl = document.getElementById('status');
 const devTools = new DevTools();
 const menuEl = document.getElementById('menu');
+
+// Make perfMonitor globally available for WebSocket
+window.perfMonitor = perfMonitor;
 const appEl = document.getElementById('app');
 const modeIndicatorEl = document.getElementById('modeIndicator');
 
@@ -422,27 +426,29 @@ async function startGame(difficulty = 'simple') {
 
 let lastFrameTime = 0;
 let lastRenderState = null;
-let frameCount = 0;
 
 function gameLoop(timestamp) {
     try {
+        // Update performance monitor
+        perfMonitor.update(timestamp);
+        
         // Skip rendering if paused (but keep loop running)
         if (!isPaused) {
-            const thrusting = gameState.thrusting || (inputHandler ? inputHandler.isThrusting() : false);
+            const thrusting = stateManager.state.thrusting || (inputHandler ? inputHandler.isThrusting() : false);
             
             // Always render if there are particles or explosion (they animate)
             const hasAnimation = renderer.particles.length > 0 || renderer.explosion;
             
             // Only render if state changed OR animation is active
             const currentState = JSON.stringify({
-                lander: gameState.lander,
+                lander: stateManager.state.lander,
                 thrusting: thrusting,
-                altitude: gameState.altitude,
-                speed: gameState.speed
+                altitude: stateManager.state.altitude,
+                speed: stateManager.state.speed
             });
             
             if (currentState !== lastRenderState || hasAnimation) {
-                renderer.render(gameState, thrusting);
+                renderer.render(stateManager.state, thrusting);
                 lastRenderState = currentState;
             }
         }
@@ -473,6 +479,11 @@ function startGameLoop() {
 }
 
 document.addEventListener('keydown', (e) => {
+    // F key - toggle performance monitor
+    if (e.key === 'f' || e.key === 'F') {
+        perfMonitor.toggle();
+    }
+    
     if (e.key === 'p' || e.key === 'P') {
         // Only allow pause in play mode (not spectate or replay)
         if (currentMode === 'play' && gameState.lander && !gameState.lander.crashed && !gameState.lander.landed) {

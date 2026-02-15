@@ -1,0 +1,33 @@
+/* Performance Monitor Styles */
+#perfMonitor {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #0f0;
+    padding: 10px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    color: #0f0;
+    z-index: 9999;
+    min-width: 120px;
+}
+
+.perf-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 2px 0;
+    gap: 10px;
+}
+
+.perf-good {
+    color: #0f0;
+}
+
+.perf-ok {
+    color: #ff0;
+}
+
+.perf-warn {
+    color: #f00;
+}
