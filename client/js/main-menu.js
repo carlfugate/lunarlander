@@ -361,6 +361,14 @@ async function startGame(difficulty = 'simple') {
             console.log('statusEl color:', computed.color);
             console.log('statusEl background:', computed.background);
             console.log('statusEl z-index:', computed.zIndex);
+            console.log('statusEl position:', computed.position);
+            console.log('statusEl border:', computed.border);
+            
+            // Force inline styles as fallback
+            statusEl.style.zIndex = '2000';
+            statusEl.style.position = 'fixed';
+            statusEl.style.background = 'rgba(0, 0, 0, 0.9)';
+            console.log('After inline styles - z-index:', window.getComputedStyle(statusEl).zIndex);
         };
         
         await wsClient.connect();
