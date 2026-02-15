@@ -347,7 +347,8 @@ async function startGame(difficulty = 'simple') {
             `;
             statusEl.style.color = data.landed ? '#0f0' : '#f00';
             statusEl.style.borderColor = data.landed ? '#0f0' : '#f00';
-            console.log('Adding visible class to statusEl');
+            console.log('Removing hidden, adding visible class to statusEl');
+            statusEl.classList.remove('hidden');
             statusEl.classList.add('visible');
             console.log('statusEl classes:', statusEl.className);
         };
