@@ -378,13 +378,26 @@ async function startGame(difficulty = 'simple') {
         };
         
         wsClient.onTelemetry = (data) => {
-            stateManager.setState({
-                lander: data.lander,
+            const stateUpdate = {
+                terrain: data.terrain || stateManager.state.terrain,
                 thrusting: data.thrusting || false,
                 altitude: data.altitude || 0,
                 speed: data.speed || 0,
                 spectatorCount: data.spectator_count
-            });
+            };
+            
+            // Multiplayer mode
+            if (data.players) {
+                stateUpdate.players = data.players;
+                stateUpdate.lander = null;
+            } 
+            // Single player mode
+            else {
+                stateUpdate.lander = data.lander;
+                stateUpdate.players = null;
+            }
+            
+            stateManager.setState(stateUpdate);
             devTools.update(gameState);
         };
         

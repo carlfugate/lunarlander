@@ -104,6 +104,10 @@ export class WebSocketClient {
                 if (this.onInit) this.onInit(data);
                 break;
             case 'telemetry':
+                console.log('Telemetry data received:', data);
+                if (data.players) {
+                    console.log('Players object found:', data.players);
+                }
                 if (this.onTelemetry) this.onTelemetry(data);
                 break;
             case 'game_over':
