@@ -129,8 +129,11 @@ async def spectate_game(websocket: WebSocket, session_id: str):
         # Keep connection alive
         while session.running:
             try:
-                # Just wait for messages (spectators don't send input)
-                await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
+                # Handle spectator messages (like ping)
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
+                msg = json.loads(data)
+                if msg.get("type") == "ping":
+                    await websocket.send_text(json.dumps({"type": "pong"}))
             except asyncio.TimeoutError:
                 continue
             except:
@@ -282,6 +285,9 @@ async def websocket_endpoint(websocket: WebSocket):
                                 session.handle_input(action)
                             else:
                                 print(f"Invalid action from {session_id}: {action}")
+                        elif msg.get("type") == "ping":
+                            # Respond to ping with pong
+                            await websocket.send_text(json.dumps({"type": "pong"}))
                     except asyncio.TimeoutError:
                         continue
                     except json.JSONDecodeError:
