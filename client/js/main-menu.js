@@ -314,7 +314,6 @@ async function startGame(difficulty = 'simple') {
         wsClient = new WebSocketClient(wsUrl);
         
         wsClient.onInit = (data) => {
-            console.log('✓ Received init message:', data);
             gameState.terrain = data.terrain;
             gameState.lander = data.lander;
             gameState.thrusting = false;
@@ -357,8 +356,6 @@ async function startGame(difficulty = 'simple') {
         // Show mobile controls on mobile devices or small screens
         const isMobile = window.innerWidth <= 768 || 
                         /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        console.log('isMobile:', isMobile, 'width:', window.innerWidth, 'userAgent:', navigator.userAgent);
         
         if (isMobile) {
             try {

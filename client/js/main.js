@@ -28,18 +28,6 @@ wsClient.onInit = (data) => {
 
 wsClient.onTelemetry = (data) => {
     gameState.lander = data.lander;
-    // Log every 60th frame (once per second) with timestamp
-    if (Math.random() < 0.016) {
-        console.log(`[${data.timestamp.toFixed(3)}] Telemetry:`, {
-            y: data.lander.y.toFixed(1),
-            vy: data.lander.vy.toFixed(2),
-            fuel: data.lander.fuel.toFixed(0),
-            rotation: data.lander.rotation.toFixed(2),
-            nearest_zone: data.nearest_landing_zone ? 
-                `${data.nearest_landing_zone.direction} ${data.nearest_landing_zone.distance.toFixed(0)}px` : 
-                'none'
-        });
-    }
 };
 
 wsClient.onGameOver = (data) => {
