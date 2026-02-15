@@ -34,6 +34,10 @@ export class MobileControls {
     }
     
     swapControls() {
+        console.log('swapControls called, thrustOnLeft:', this.thrustOnLeft);
+        console.log('leftGroup:', this.leftGroup, 'rightGroup:', this.rightGroup);
+        console.log('thrustBtn:', this.thrustBtn, 'leftBtn:', this.leftBtn, 'rightBtn:', this.rightBtn);
+        
         if (this.thrustOnLeft) {
             // Thrust on left (default)
             this.leftGroup.innerHTML = '';
@@ -41,6 +45,7 @@ export class MobileControls {
             this.leftGroup.appendChild(this.thrustBtn);
             this.rightGroup.appendChild(this.leftBtn);
             this.rightGroup.appendChild(this.rightBtn);
+            console.log('Set thrust on LEFT');
         } else {
             // Thrust on right (swapped)
             this.leftGroup.innerHTML = '';
@@ -48,7 +53,10 @@ export class MobileControls {
             this.leftGroup.appendChild(this.leftBtn);
             this.leftGroup.appendChild(this.rightBtn);
             this.rightGroup.appendChild(this.thrustBtn);
+            console.log('Set thrust on RIGHT');
         }
+        
+        console.log('After swap - left children:', this.leftGroup.children.length, 'right children:', this.rightGroup.children.length);
     }
     
     setupSwapButton() {

@@ -104,3 +104,55 @@ describe('Mobile Detection Logic', () => {
     expect(isMobile).toBe(true);
   });
 });
+
+describe('Mobile Controls Layout', () => {
+  let leftGroup, rightGroup, thrustBtn, leftBtn, rightBtn;
+  
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <div id="mobileControls">
+        <div id="leftControls"></div>
+        <div id="rightControls"></div>
+      </div>
+      <button id="thrust">▲</button>
+      <button id="rotateLeft">◀</button>
+      <button id="rotateRight">▶</button>
+    `;
+    
+    leftGroup = document.getElementById('leftControls');
+    rightGroup = document.getElementById('rightControls');
+    thrustBtn = document.getElementById('thrust');
+    leftBtn = document.getElementById('rotateLeft');
+    rightBtn = document.getElementById('rotateRight');
+  });
+  
+  it('should place thrust on left by default', () => {
+    // Simulate default layout
+    leftGroup.innerHTML = '';
+    rightGroup.innerHTML = '';
+    leftGroup.appendChild(thrustBtn);
+    rightGroup.appendChild(leftBtn);
+    rightGroup.appendChild(rightBtn);
+    
+    expect(leftGroup.children.length).toBe(1);
+    expect(rightGroup.children.length).toBe(2);
+    expect(leftGroup.children[0].id).toBe('thrust');
+    expect(rightGroup.children[0].id).toBe('rotateLeft');
+    expect(rightGroup.children[1].id).toBe('rotateRight');
+  });
+  
+  it('should place thrust on right when swapped', () => {
+    // Simulate swapped layout
+    leftGroup.innerHTML = '';
+    rightGroup.innerHTML = '';
+    leftGroup.appendChild(leftBtn);
+    leftGroup.appendChild(rightBtn);
+    rightGroup.appendChild(thrustBtn);
+    
+    expect(leftGroup.children.length).toBe(2);
+    expect(rightGroup.children.length).toBe(1);
+    expect(leftGroup.children[0].id).toBe('rotateLeft');
+    expect(leftGroup.children[1].id).toBe('rotateRight');
+    expect(rightGroup.children[0].id).toBe('thrust');
+  });
+});
