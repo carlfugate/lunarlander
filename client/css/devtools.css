@@ -1,0 +1,61 @@
+/* Dev Tools Panel */
+#devTools {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: 300px;
+    max-height: 400px;
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid #0f0;
+    border-bottom: none;
+    border-right: none;
+    color: #0f0;
+    font-family: monospace;
+    font-size: 12px;
+    padding: 10px;
+    overflow-y: auto;
+    z-index: 9999;
+    transition: transform 0.3s ease;
+}
+
+#devTools.hidden {
+    transform: translateY(100%);
+}
+
+#devTools h3 {
+    margin: 0 0 10px 0;
+    color: #0ff;
+    font-size: 14px;
+}
+
+#devTools .dev-section {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #0f0;
+}
+
+#devTools .dev-section:last-child {
+    border-bottom: none;
+}
+
+#devTools .dev-label {
+    color: #888;
+    display: inline-block;
+    width: 100px;
+}
+
+#devTools .dev-value {
+    color: #0f0;
+}
+
+#devTools .dev-status-ok {
+    color: #0f0;
+}
+
+#devTools .dev-status-error {
+    color: #f00;
+}
+
+#devTools .dev-status-warn {
+    color: #ff0;
+}

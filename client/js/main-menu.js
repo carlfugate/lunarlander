@@ -3,12 +3,14 @@ import { WebSocketClient } from './websocket.js';
 import { InputHandler } from './input.js';
 import { ReplayPlayer } from './replay.js';
 import { MobileControls } from './mobile-controls.js';
+import { DevTools } from './devtools.js';
 import { logger } from './logger.js';
 import config from './config.js';
 
 const canvas = document.getElementById('gameCanvas');
 const renderer = new Renderer(canvas);
 const statusEl = document.getElementById('status');
+const devTools = new DevTools();
 const menuEl = document.getElementById('menu');
 const appEl = document.getElementById('app');
 const modeIndicatorEl = document.getElementById('modeIndicator');
@@ -331,6 +333,7 @@ async function startGame(difficulty = 'simple') {
             gameState.altitude = data.altitude || 0;
             gameState.speed = data.speed || 0;
             gameState.spectatorCount = data.spectator_count;
+            devTools.update(gameState);
         };
         
         wsClient.onGameOver = (data) => {
@@ -360,6 +363,11 @@ async function startGame(difficulty = 'simple') {
                         /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
         logger.debug('Mobile detection:', { isMobile, width: window.innerWidth, userAgent: navigator.userAgent });
+        
+        // Update dev tools
+        devTools.setStatus('devWsStatus', 'Connected', 'ok');
+        devTools.setText('devMobile', isMobile ? 'Yes' : 'No');
+        devTools.setText('devDebugMode', localStorage.getItem('debug') === 'true' ? 'On' : 'Off');
         
         if (isMobile) {
             try {

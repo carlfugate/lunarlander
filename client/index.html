@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lunar Lander</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/devtools.css">
 </head>
 <body>
     <div id="menu" class="visible">
@@ -115,6 +116,27 @@
     </div>
     <!-- Status box outside app to avoid flex container issues -->
     <div id="status" class="hidden">Connecting...</div>
+    
+    <!-- Dev Tools Panel (toggle with ` key) -->
+    <div id="devTools" class="hidden">
+        <h3>Dev Tools (Press ` to toggle)</h3>
+        <div class="dev-section">
+            <div><span class="dev-label">FPS:</span> <span id="devFps" class="dev-value">--</span></div>
+            <div><span class="dev-label">Frame Time:</span> <span id="devFrameTime" class="dev-value">--</span></div>
+        </div>
+        <div class="dev-section">
+            <div><span class="dev-label">WebSocket:</span> <span id="devWsStatus" class="dev-value">--</span></div>
+            <div><span class="dev-label">Mobile:</span> <span id="devMobile" class="dev-value">--</span></div>
+            <div><span class="dev-label">Debug Mode:</span> <span id="devDebugMode" class="dev-value">--</span></div>
+        </div>
+        <div class="dev-section">
+            <div><span class="dev-label">Position:</span> <span id="devPosition" class="dev-value">--</span></div>
+            <div><span class="dev-label">Velocity:</span> <span id="devVelocity" class="dev-value">--</span></div>
+            <div><span class="dev-label">Rotation:</span> <span id="devRotation" class="dev-value">--</span></div>
+            <div><span class="dev-label">Fuel:</span> <span id="devFuel" class="dev-value">--</span></div>
+        </div>
+    </div>
+    
     <script type="module" src="js/main-menu.js"></script>
 </body>
 </html>

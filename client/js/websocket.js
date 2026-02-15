@@ -1,3 +1,5 @@
+import { logger } from './logger.js';
+
 export class WebSocketClient {
     constructor(url) {
         this.url = url;
@@ -60,6 +62,8 @@ export class WebSocketClient {
     }
     
     handleMessage(data) {
+        logger.debug('WS Receive:', { type: data.type, data });
+        
         switch (data.type) {
             case 'init':
                 if (this.onInit) this.onInit(data);
@@ -71,7 +75,7 @@ export class WebSocketClient {
                 if (this.onGameOver) this.onGameOver(data);
                 break;
             case 'error':
-                console.error('Server error:', data.message);
+                logger.error('Server error:', data.message);
                 if (this.onError) this.onError(data);
                 break;
         }
@@ -99,6 +103,7 @@ export class WebSocketClient {
     
     send(data) {
         if (this.connected && this.ws.readyState === WebSocket.OPEN) {
+            logger.debug('WS Send:', data);
             this.ws.send(JSON.stringify(data));
         }
     }

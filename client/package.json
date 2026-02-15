@@ -8,7 +8,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "lint:css": "stylelint 'css/**/*.css'",
-    "validate": "npm run lint:css && npm test"
+    "validate": "npm run lint:css && npm test -- --run"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",

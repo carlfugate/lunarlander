@@ -233,3 +233,28 @@ Built with ❤️ for hacker conferences and AI competitions.
 ---
 
 **Ready to play?** Start the server and visit http://localhost 🚀
+
+
+## 🛠️ Quick Commands
+
+**Development:**
+```bash
+cd client
+npm run dev              # Start dev server
+npm run validate         # Run CSS linting + tests
+npm test                 # Run unit tests (watch mode)
+npm run test:e2e         # Run E2E tests
+```
+
+**Debugging:**
+- Add `?debug=true` to URL to enable debug logs
+- Press **`** (backtick) to toggle dev tools panel
+- Run `logger.enable()` in console to enable debug mode
+- Run `logger.perf.memory()` to check memory usage
+- Run `logger.storage()` to inspect localStorage
+
+**Testing:**
+```bash
+npm run lint:css         # Check CSS syntax
+npm run validate         # Run all checks before commit
+```
