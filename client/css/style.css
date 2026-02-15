@@ -341,24 +341,23 @@ body {
     flex-shrink: 0;
 }
 
-/* Only show on mobile devices */
-@media (max-width: 768px) {
-    #mobileControls.visible {
-        display: flex !important;
-        flex-direction: row !important;
-        justify-content: space-between !important;
-    }
-    
-    #controlSwap.visible {
-        display: block !important;
-    }
-    
-    #mobileMenuControls.visible {
-        display: flex !important;
-    }
+/* Mobile controls - shown when .visible class is added by JavaScript */
+#mobileControls.visible {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
 }
 
-@media (max-width: 768px) and (orientation: landscape) {
+#controlSwap.visible {
+    display: block !important;
+}
+
+#mobileMenuControls.visible {
+    display: flex !important;
+}
+
+/* Responsive adjustments for small screens */
+@media (max-width: 768px) {
     canvas {
         max-height: 100vh;
         width: auto;
