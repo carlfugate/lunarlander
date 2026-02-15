@@ -18,7 +18,9 @@ export async function fetchRooms() {
 }
 
 export function renderRoomList(rooms) {
-    const roomList = document.getElementById('room-list');
+    const roomList = document.getElementById('roomListContent');
+    if (!roomList) return;
+    
     roomList.innerHTML = '';
     
     rooms.forEach(room => {
@@ -59,16 +61,26 @@ async function createRoom(playerName) {
 
 // Event handlers
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('create-room-btn').onclick = () => {
-        const roomName = prompt('Enter room name:');
-        if (roomName) {
-            createRoom(roomName);
-        }
-    };
+    const createBtn = document.getElementById('createRoomBtn');
+    const joinBtn = document.getElementById('joinRoomBtn');
+    const backBtn = document.getElementById('backFromLobby');
     
-    document.getElementById('join-room-btn').onclick = () => {
-        fetchRooms().then(rooms => renderRoomList(rooms));
-    };
+    if (createBtn) {
+        createBtn.onclick = () => {
+            const roomName = prompt('Enter room name:');
+            if (roomName) {
+                createRoom(roomName);
+            }
+        };
+    }
     
-    document.getElementById('back-btn').onclick = hideLobby;
+    if (joinBtn) {
+        joinBtn.onclick = () => {
+            fetchRooms().then(rooms => renderRoomList(rooms));
+        };
+    }
+    
+    if (backBtn) {
+        backBtn.onclick = hideLobby;
+    }
 });
