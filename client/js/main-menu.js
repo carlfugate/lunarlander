@@ -49,12 +49,8 @@ import { ReplayPlayer } from './replay.js';
 import { MobileControls } from './mobile-controls.js';
 import { DevTools } from './devtools.js';
 import { logger } from './logger.js';
-import { initErrorTracking, addBreadcrumb } from './error-tracking.js';
 import { stateManager } from './state.js';
 import config from './config.js';
-
-// Initialize error tracking
-initErrorTracking();
 
 const canvas = document.getElementById('gameCanvas');
 const renderer = new Renderer(canvas);
@@ -260,7 +256,6 @@ let isConnecting = false;
  * @param {string} sessionId - Game session ID to spectate
  */
 function spectateGame(sessionId) {
-    addBreadcrumb('Starting spectate mode', 'navigation', { sessionId });
     if (isConnecting) return;
     isConnecting = true;
     
