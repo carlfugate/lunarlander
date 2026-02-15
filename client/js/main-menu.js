@@ -333,6 +333,7 @@ async function startGame(difficulty = 'simple') {
         };
         
         wsClient.onGameOver = (data) => {
+            console.log('Game over handler called:', data);
             gameActive = false;
             const result = data.landed ? 'LANDED!' : 'CRASHED!';
             const score = data.score || 0;
@@ -346,7 +347,9 @@ async function startGame(difficulty = 'simple') {
             `;
             statusEl.style.color = data.landed ? '#0f0' : '#f00';
             statusEl.style.borderColor = data.landed ? '#0f0' : '#f00';
+            console.log('Adding visible class to statusEl');
             statusEl.classList.add('visible');
+            console.log('statusEl classes:', statusEl.className);
         };
         
         await wsClient.connect();
