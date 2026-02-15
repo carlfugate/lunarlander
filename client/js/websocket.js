@@ -16,6 +16,8 @@ export class WebSocketClient {
         this.onInit = null;
         this.onGameOver = null;
         this.onError = null;
+        this.lastPingTime = null;
+        this.pingInterval = null;
     }
     
     /**
@@ -46,6 +48,15 @@ export class WebSocketClient {
             this.ws.onopen = () => {
                 this.connected = true;
                 console.log('✓ WebSocket connected');
+                
+                // Start ping interval
+                this.pingInterval = setInterval(() => {
+                    if (this.connected) {
+                        this.lastPingTime = Date.now();
+                        this.send({ type: 'ping' });
+                    }
+                }, 2000); // Ping every 2 seconds
+                
                 resolve();
             };
             
@@ -63,6 +74,13 @@ export class WebSocketClient {
             this.ws.onclose = () => {
                 this.connected = false;
                 console.log('WebSocket closed');
+                
+                // Clear ping interval
+                if (this.pingInterval) {
+                    clearInterval(this.pingInterval);
+                    this.pingInterval = null;
+                }
+                
                 // Notify user of disconnection
                 if (typeof statusEl !== 'undefined' && statusEl) {
                     statusEl.innerHTML = '<div style="font-size: 20px;">Connection lost</div><div>Press ESC for menu</div>';
@@ -81,14 +99,6 @@ export class WebSocketClient {
     handleMessage(data) {
         logger.debug('WS Receive:', { type: data.type, data });
         
-        // Track latency if timestamp present
-        if (data.timestamp) {
-            const latency = Date.now() - data.timestamp;
-            if (window.perfMonitor) {
-                window.perfMonitor.recordLatency(latency);
-            }
-        }
-        
         switch (data.type) {
             case 'init':
                 if (this.onInit) this.onInit(data);
@@ -98,6 +108,13 @@ export class WebSocketClient {
                 break;
             case 'game_over':
                 if (this.onGameOver) this.onGameOver(data);
+                break;
+            case 'pong':
+                // Calculate latency from ping
+                if (this.lastPingTime && window.perfMonitor) {
+                    const latency = Date.now() - this.lastPingTime;
+                    window.perfMonitor.recordLatency(latency);
+                }
                 break;
             case 'error':
                 logger.error('Server error:', data.message);
@@ -145,6 +162,11 @@ export class WebSocketClient {
     }
     
     close() {
+        if (this.pingInterval) {
+            clearInterval(this.pingInterval);
+            this.pingInterval = null;
+        }
+        
         if (this.ws) {
             // Clean up event handlers to prevent memory leaks
             this.ws.onopen = null;
