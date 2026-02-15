@@ -199,10 +199,6 @@ body {
     cursor: pointer;
 }
 
-#controlSwap.visible {
-    display: block;
-}
-
 #mobileMenuControls {
     position: fixed;
     top: 10px;
@@ -210,10 +206,6 @@ body {
     display: none;
     gap: 10px;
     z-index: 1000;
-}
-
-#mobileMenuControls.visible {
-    display: flex;
 }
 
 .mobile-menu-btn {
