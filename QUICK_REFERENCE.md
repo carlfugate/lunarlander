@@ -7,6 +7,7 @@
 | Error Tracking (Sentry) | ✅ Ready | Add DSN to `.env` (optional) |
 | State Management | ✅ Complete | None - fully integrated |
 | Environment Config | ✅ Complete | None - `.env` created |
+| Code Splitting | ✅ Complete | None - spectate/replay lazy loaded |
 | CI/CD Pipeline | ⏳ Ready | Upload to GitHub Actions |
 | Documentation | ✅ Complete | None |
 | Source Maps | ✅ Complete | None |
@@ -112,8 +113,7 @@ All 47 tests passing:
 
 1. ⏳ Upload CI/CD workflow (5 min)
 2. Optional: Configure Sentry (10 min)
-3. Optional: Code splitting for faster load
 
 ---
 
-**Status:** 95% Complete | **Tests:** 47/47 Passing | **Last Updated:** 2026-02-15
+**Status:** 98% Complete | **Tests:** 47/47 Passing | **Last Updated:** 2026-02-15
