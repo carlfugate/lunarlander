@@ -276,8 +276,10 @@ function spectateGame(sessionId) {
             },
             (result, scoreText) => {
                 console.log('Game over callback:', result, scoreText);
+                console.log('statusEl:', statusEl, 'visible class:', statusEl.classList.contains('visible'));
                 statusEl.innerHTML = `<div style="font-size: 24px;">${result}</div>${scoreText}<div>Press ESC for menu</div>`;
                 statusEl.classList.add('visible');
+                console.log('After update - visible class:', statusEl.classList.contains('visible'));
             }
         );
     }).catch((error) => {
