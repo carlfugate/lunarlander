@@ -341,10 +341,6 @@ body {
     box-sizing: border-box;
 }
 
-#mobileControls.visible {
-    display: flex !important;
-}
-
 .mobile-control-group {
     display: flex;
     gap: 15px;
@@ -352,13 +348,18 @@ body {
     flex-shrink: 0;
 }
 
+/* Only show on mobile devices */
 @media (max-width: 768px) {
     #mobileControls.visible {
-        display: flex;
+        display: flex !important;
     }
     
     #controlSwap.visible {
-        display: block;
+        display: block !important;
+    }
+    
+    #mobileMenuControls.visible {
+        display: flex !important;
     }
 }
 
