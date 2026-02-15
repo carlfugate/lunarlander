@@ -1,8 +1,14 @@
 # Production Improvements - Implementation Plan
 
-## Status: Ready to Implement
+## Status: 95% Complete ✅
 
-This document outlines production-ready improvements that are **partially implemented** and ready to complete.
+### Completed Features:
+1. ✅ **Error Tracking (Sentry)** - Ready for DSN
+2. ✅ **State Management** - Fully integrated
+3. ✅ **Environment Config** - .env created
+4. ⏳ **CI/CD** - Workflow ready, needs manual GitHub upload
+
+### Remaining: Add CI/CD via GitHub UI (5 minutes)
 
 ## What's Already Done ✅
 
@@ -56,49 +62,22 @@ This document outlines production-ready improvements that are **partially implem
 
 ## Quick Start After Compact
 
-### Step 1: Commit Current Changes
-```bash
-cd ~/Documents/Github/lunarlander
-git add -A
-git commit -m "Add production improvements: Error tracking, State management, Documentation
+### ✅ Step 1: State Manager Integration - COMPLETE
+All gameState assignments now use `stateManager.setState()` for centralized state management.
 
-Implemented:
-- Sentry error tracking (needs DSN configuration)
-- Centralized state manager
-- Production documentation
-- Environment variable setup
+### ✅ Step 2: Environment Configuration - COMPLETE
+Created `client/.env` from template. To enable Sentry:
+1. Sign up at https://sentry.io (free tier)
+2. Create a project
+3. Copy DSN to `client/.env`: `VITE_SENTRY_DSN=your-dsn-here`
 
-Next steps:
-- Configure Sentry DSN
-- Integrate state manager into main-menu.js
-- Add CI/CD workflow via GitHub UI"
-
-git push
-```
-
-### Step 2: Configure Sentry (Optional)
-```bash
-cd client
-cp .env.example .env
-# Edit .env and add your Sentry DSN
-```
-
-### Step 3: Integrate State Manager
-Replace in `main-menu.js`:
-```javascript
-// OLD
-gameState.lander = data.lander;
-
-// NEW
-import { stateManager } from './state.js';
-stateManager.setState({ lander: data.lander });
-```
-
-### Step 4: Add CI/CD (Via GitHub UI)
+### Step 3: Add CI/CD Workflow
+GitHub OAuth blocks workflow creation via CLI. To add manually:
 1. Go to GitHub repo → Actions tab
-2. Click "New workflow"
-3. Copy content from `docs/PRODUCTION.md` CI/CD section
+2. Click "New workflow" → "set up a workflow yourself"
+3. Copy content from `ci-workflow.yml` in repo root
 4. Save as `.github/workflows/ci.yml`
+5. Commit directly to master
 
 ## Files Modified/Created
 

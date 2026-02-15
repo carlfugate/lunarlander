@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, feature/* ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: client/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: ./client
+      run: npm ci
+    
+    - name: Lint CSS
+      working-directory: ./client
+      run: npm run lint:css
+    
+    - name: Run unit tests
+      working-directory: ./client
+      run: npm test -- --run
+    
+    - name: Install Playwright
+      working-directory: ./client
+      run: npx playwright install chromium
+    
+    - name: Run E2E tests
+      working-directory: ./client
+      run: npm run test:e2e
+    
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: client/test-results/
+        retention-days: 7

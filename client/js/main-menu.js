@@ -50,13 +50,11 @@ import { MobileControls } from './mobile-controls.js';
 import { DevTools } from './devtools.js';
 import { logger } from './logger.js';
 import { initErrorTracking, addBreadcrumb } from './error-tracking.js';
+import { stateManager } from './state.js';
 import config from './config.js';
 
 // Initialize error tracking
 initErrorTracking();
-
-// Make gameState available globally for error context
-window.gameState = { terrain: null, lander: null, thrusting: false, altitude: 0, speed: 0 };
 
 const canvas = document.getElementById('gameCanvas');
 const renderer = new Renderer(canvas);
@@ -67,7 +65,7 @@ const appEl = document.getElementById('app');
 const modeIndicatorEl = document.getElementById('modeIndicator');
 
 /** @type {GameState} */
-let gameState = window.gameState;
+let gameState = stateManager.state;
 /** @type {InputHandler|null} */
 let inputHandler = null;
 /** @type {MobileControls|null} */
@@ -278,19 +276,19 @@ function spectateGame(sessionId) {
     wsClient = new WebSocketClient(wsUrl);
     
     wsClient.onInit = (data) => {
-        gameState.terrain = data.terrain;
-        gameState.lander = data.lander;
-        gameState.thrusting = false;
+        stateManager.setState({ terrain: data.terrain, lander: data.lander, thrusting: false });
         startGameLoop();
         isConnecting = false;
     };
     
     wsClient.onTelemetry = (data) => {
-        gameState.lander = data.lander;
-        gameState.thrusting = data.thrusting || false;
-        gameState.altitude = data.altitude || 0;
-        gameState.speed = data.speed || 0;
-        gameState.spectatorCount = data.spectator_count;
+        stateManager.setState({
+            lander: data.lander,
+            thrusting: data.thrusting || false,
+            altitude: data.altitude || 0,
+            speed: data.speed || 0,
+            spectatorCount: data.spectator_count
+        });
     };
     
     wsClient.onGameOver = (data) => {
@@ -335,8 +333,7 @@ async function playReplay(replayId) {
         const replayData = await response.json();
         
         // Set up game state with replay terrain
-        gameState.terrain = replayData.metadata.terrain;
-        gameState.lander = null;
+        stateManager.setState({ terrain: replayData.metadata.terrain, lander: null });
         
         // Create replay player
         const replayPlayer = new ReplayPlayer(replayData);
@@ -359,10 +356,12 @@ async function playReplay(replayId) {
             }
             
             const frame = replayData.frames[frameIndex];
-            gameState.lander = frame.lander;
-            gameState.altitude = frame.altitude || 0;
-            gameState.speed = frame.speed || 0;
-            gameState.thrusting = frame.thrusting || false;
+            stateManager.setState({
+                lander: frame.lander,
+                altitude: frame.altitude || 0,
+                speed: frame.speed || 0,
+                thrusting: frame.thrusting || false
+            });
             
             frameIndex++;
             setTimeout(() => requestAnimationFrame(replayLoop), frameDelay);
@@ -395,9 +394,7 @@ async function startGame(difficulty = 'simple') {
         
         wsClient.onInit = (data) => {
             logger.debug('Received init message:', data);
-            gameState.terrain = data.terrain;
-            gameState.lander = data.lander;
-            gameState.thrusting = false;
+            stateManager.setState({ terrain: data.terrain, lander: data.lander, thrusting: false });
             gameActive = true;
             statusEl.classList.remove('visible');
             startGameLoop();
@@ -405,11 +402,13 @@ async function startGame(difficulty = 'simple') {
         };
         
         wsClient.onTelemetry = (data) => {
-            gameState.lander = data.lander;
-            gameState.thrusting = data.thrusting || false;
-            gameState.altitude = data.altitude || 0;
-            gameState.speed = data.speed || 0;
-            gameState.spectatorCount = data.spectator_count;
+            stateManager.setState({
+                lander: data.lander,
+                thrusting: data.thrusting || false,
+                altitude: data.altitude || 0,
+                speed: data.speed || 0,
+                spectatorCount: data.spectator_count
+            });
             devTools.update(gameState);
         };
         
