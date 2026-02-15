@@ -258,3 +258,9 @@ npm run test:e2e         # Run E2E tests
 npm run lint:css         # Check CSS syntax
 npm run validate         # Run all checks before commit
 ```
+
+**Git Workflow:**
+- Small fixes/docs → commit directly to master
+- Major changes → create feature branch first
+- See [Git Workflow](docs/GIT_WORKFLOW.md) for details
+
