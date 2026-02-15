@@ -231,8 +231,13 @@ class GameSession:
                 "impact_speed": impact_speed
             })
         
-        # Send to player (always 60Hz)
-        await self.websocket.send_text(json.dumps(message))
+        # Send to all players
+        for player_id, player in list(self.players.items()):
+            try:
+                await player['websocket'].send_text(json.dumps(message))
+            except:
+                # Remove player if websocket is closed
+                self.remove_player(player_id)
         
         # Send to spectators (30Hz when send_to_spectators=True)
         if send_to_spectators:
@@ -272,8 +277,13 @@ class GameSession:
             "replay_id": replay_id
         }
         
-        # Send to player
-        await self.websocket.send_text(json.dumps(message))
+        # Send to all players
+        for player_id, player in list(self.players.items()):
+            try:
+                await player['websocket'].send_text(json.dumps(message))
+            except:
+                # Remove player if websocket is closed
+                self.remove_player(player_id)
         
         # Send to all spectators
         for spectator_ws in self.spectators[:]:
@@ -326,8 +336,13 @@ class GameSession:
             }
         }
         
-        # Send to player
-        await self.websocket.send_text(json.dumps(message))
+        # Send to all players
+        for player_id, player in list(self.players.items()):
+            try:
+                await player['websocket'].send_text(json.dumps(message))
+            except:
+                # Remove player if websocket is closed
+                self.remove_player(player_id)
         
         # Send to all spectators
         for spectator_ws in self.spectators[:]:

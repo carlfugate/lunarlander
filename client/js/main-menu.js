@@ -63,15 +63,16 @@ const menuEl = document.getElementById('menu');
 window.perfMonitor = perfMonitor;
 
 // Global helper function for joining rooms from console
-window.joinRoom = function(roomId, playerName = 'Player2') {
-    if (wsClient && wsClient.ws && wsClient.ws.readyState === WebSocket.OPEN) {
-        wsClient.send(JSON.stringify({
-            type: 'join_room',
-            room_id: roomId,
-            player_name: playerName
-        }));
-    } else {
-        console.error('WebSocket not connected');
+window.joinRoom = async function(roomId, playerName = 'Player2') {
+    try {
+        if (!wsClient) {
+            const wsUrl = `${config.WS_PROTOCOL}//${config.WS_HOST}/ws`;
+            wsClient = new WebSocketClient(wsUrl);
+        }
+        await wsClient.joinRoom(roomId, playerName);
+        console.log(`Joined room ${roomId} as ${playerName}`);
+    } catch (error) {
+        console.error('Failed to join room:', error);
     }
 };
 const appEl = document.getElementById('app');

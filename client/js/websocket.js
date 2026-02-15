@@ -149,6 +149,27 @@ export class WebSocketClient {
     }
     
     /**
+     * Join a room
+     * @param {string} roomId - Room ID to join
+     * @param {string} [playerName='Player2'] - Player name
+     * @returns {Promise<void>}
+     */
+    async joinRoom(roomId, playerName = 'Player2') {
+        if (!this.connected) {
+            await this.connect();
+        }
+        
+        return new Promise((resolve) => {
+            this.send({
+                type: 'join_room',
+                room_id: roomId,
+                player_name: playerName
+            });
+            resolve();
+        });
+    }
+    
+    /**
      * Start a new game
      * @param {string} [difficulty='simple'] - Difficulty level
      * @param {string|null} [token=null] - Authentication token
