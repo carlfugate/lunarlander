@@ -9,8 +9,24 @@ export class Renderer {
         this.explosion = null;
         this.hasExploded = false;
         
+        // Starfield
+        this.stars = this.generateStars(200);
+        
         // Make canvas responsive
         this.setupResponsive();
+    }
+    
+    generateStars(count) {
+        const stars = [];
+        for (let i = 0; i < count; i++) {
+            stars.push({
+                x: Math.random() * this.width,
+                y: Math.random() * this.height,
+                size: Math.random() * 2,
+                brightness: 0.3 + Math.random() * 0.7
+            });
+        }
+        return stars;
     }
     
     setupResponsive() {
@@ -32,6 +48,20 @@ export class Renderer {
     clear() {
         this.ctx.fillStyle = '#000';
         this.ctx.fillRect(0, 0, this.width, this.height);
+        
+        // Draw starfield with parallax
+        this.stars.forEach(star => {
+            const parallax = star.size * 0.3;
+            const x = star.x - this.camera.x * parallax;
+            const y = star.y - this.camera.y * parallax;
+            
+            // Wrap stars
+            const wrappedX = ((x % this.width) + this.width) % this.width;
+            const wrappedY = ((y % this.height) + this.height) % this.height;
+            
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness})`;
+            this.ctx.fillRect(wrappedX, wrappedY, star.size, star.size);
+        });
     }
     
     drawTerrain(terrain, lander) {
@@ -59,6 +89,7 @@ export class Renderer {
             
             terrain.landing_zones.forEach(zone => {
                 const zoneX = (zone.x1 + zone.x2) / 2;
+                const zoneY = zone.y;
                 const distance = lander ? Math.abs(lander.x - zoneX) : 1000;
                 const proximity = Math.max(0, 1 - distance / 500);
                 const alpha = 0.3 + 0.4 * pulse + 0.3 * proximity;
@@ -75,6 +106,20 @@ export class Renderer {
                 this.ctx.stroke();
                 
                 this.ctx.shadowBlur = 0;
+                
+                // Landing zone indicator (beacon)
+                if (proximity > 0.3) {
+                    const beaconX = zoneX - this.camera.x;
+                    const beaconY = zoneY - this.camera.y - 20 - Math.sin(Date.now() / 300) * 5;
+                    
+                    this.ctx.fillStyle = `rgba(0, 255, 0, ${alpha})`;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(beaconX, beaconY);
+                    this.ctx.lineTo(beaconX - 5, beaconY + 10);
+                    this.ctx.lineTo(beaconX + 5, beaconY + 10);
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                }
             });
         }
     }
