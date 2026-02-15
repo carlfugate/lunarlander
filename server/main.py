@@ -379,11 +379,19 @@ async def websocket_endpoint(websocket: WebSocket):
         if session_id in sessions:
             session = sessions[session_id]
             
+            # Debug: Show all players before removal
+            print(f"DEBUG - Players in session {session_id} before removal:")
+            for pid, player in session.players.items():
+                print(f"  Player {pid}: {player['name']} (websocket: {id(player['websocket'])})")
+            print(f"  Disconnecting websocket: {id(websocket)}")
+            
             # Find and remove disconnected player
             for pid, player in list(session.players.items()):
                 if player['websocket'] == websocket:
                     disconnected_player_name = player['name']
+                    print(f"DEBUG - Removing player {pid} ({disconnected_player_name})")
                     session.remove_player(pid)
+                    print(f"DEBUG - Players remaining after removal: {len(session.players)}")
                     
                     # Broadcast player_left to remaining players
                     if session.players:
@@ -399,6 +407,8 @@ async def websocket_endpoint(websocket: WebSocket):
                             except:
                                 pass
                     break
+            else:
+                print(f"DEBUG - No matching player found for websocket {id(websocket)} in session {session_id}")
             
             # Only delete session if no players left
             if session_id in sessions and not sessions[session_id].players:
