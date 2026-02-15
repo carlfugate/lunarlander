@@ -61,6 +61,19 @@ const menuEl = document.getElementById('menu');
 
 // Make perfMonitor globally available for WebSocket
 window.perfMonitor = perfMonitor;
+
+// Global helper function for joining rooms from console
+window.joinRoom = function(roomId, playerName = 'Player2') {
+    if (wsClient && wsClient.ws && wsClient.ws.readyState === WebSocket.OPEN) {
+        wsClient.send(JSON.stringify({
+            type: 'join_room',
+            room_id: roomId,
+            player_name: playerName
+        }));
+    } else {
+        console.error('WebSocket not connected');
+    }
+};
 const appEl = document.getElementById('app');
 const modeIndicatorEl = document.getElementById('modeIndicator');
 

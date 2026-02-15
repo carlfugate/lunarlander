@@ -116,11 +116,36 @@ export class WebSocketClient {
                     window.perfMonitor.recordLatency(latency);
                 }
                 break;
+            case 'room_created':
+                console.log('🏠 ROOM CREATED:', data.room_id);
+                this._displayRoomId(data.room_id);
+                break;
+            case 'player_joined':
+                console.log('👤 PLAYER JOINED:', data);
+                break;
+            case 'player_left':
+                console.log('👋 PLAYER LEFT:', data);
+                break;
             case 'error':
                 logger.error('Server error:', data.message);
                 if (this.onError) this.onError(data);
                 break;
         }
+    }
+    
+    /**
+     * Display room ID in top-right corner
+     * @param {string} roomId - Room ID to display
+     */
+    _displayRoomId(roomId) {
+        let roomDiv = document.getElementById('room-display');
+        if (!roomDiv) {
+            roomDiv = document.createElement('div');
+            roomDiv.id = 'room-display';
+            roomDiv.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.7);color:white;padding:5px 10px;border-radius:3px;font-family:monospace;font-size:12px;z-index:1000';
+            document.body.appendChild(roomDiv);
+        }
+        roomDiv.textContent = `Room: ${roomId}`;
     }
     
     /**
