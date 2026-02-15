@@ -34,15 +34,19 @@ export class MobileControls {
     
     swapControls() {
         if (this.thrustOnLeft) {
-            // Move thrust to right
-            this.rightGroup.appendChild(this.thrustBtn);
-            this.leftGroup.appendChild(this.leftBtn);
-            this.leftGroup.appendChild(this.rightBtn);
-        } else {
-            // Move thrust to left
+            // Thrust on left (default)
+            this.leftGroup.innerHTML = '';
+            this.rightGroup.innerHTML = '';
             this.leftGroup.appendChild(this.thrustBtn);
             this.rightGroup.appendChild(this.leftBtn);
             this.rightGroup.appendChild(this.rightBtn);
+        } else {
+            // Thrust on right (swapped)
+            this.leftGroup.innerHTML = '';
+            this.rightGroup.innerHTML = '';
+            this.leftGroup.appendChild(this.leftBtn);
+            this.leftGroup.appendChild(this.rightBtn);
+            this.rightGroup.appendChild(this.thrustBtn);
         }
     }
     
