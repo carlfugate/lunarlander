@@ -271,14 +271,15 @@ body {
     min-width: 400px !important;
     max-width: 90% !important;
     z-index: 2000 !important;
-}
-
-#status:not(.visible) {
     display: none !important;
 }
 
 #status.visible {
     display: block !important;
+}
+
+#status.hidden {
+    display: none !important;
 }
 
 @media (max-width: 768px) {
