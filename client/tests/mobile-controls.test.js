@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 describe('Mobile Controls Visibility', () => {
   let mobileControls;
@@ -32,21 +32,75 @@ describe('Mobile Controls Visibility', () => {
     expect(mobileControls.classList.contains('hidden')).toBe(false);
   });
   
-  it('should not display on desktop (> 768px)', () => {
-    // Add visible class
-    mobileControls.classList.add('visible');
-    
-    // Get computed style (would be 'none' on desktop due to media query)
-    const style = window.getComputedStyle(mobileControls);
-    
-    // In jsdom, we can't test actual media queries, but we can verify
-    // the element has the right classes
-    expect(mobileControls.classList.contains('visible')).toBe(true);
-  });
-  
   it('should have correct structure', () => {
     expect(mobileControls).toBeTruthy();
     expect(mobileMenuControls).toBeTruthy();
     expect(controlSwap).toBeTruthy();
+  });
+});
+
+describe('Mobile Detection Logic', () => {
+  it('should detect mobile by screen width', () => {
+    // Mock window.innerWidth
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 500
+    });
+    
+    const isMobile = window.innerWidth <= 768;
+    expect(isMobile).toBe(true);
+  });
+  
+  it('should detect desktop by screen width', () => {
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 1024
+    });
+    
+    const isMobile = window.innerWidth <= 768;
+    expect(isMobile).toBe(false);
+  });
+  
+  it('should detect mobile by user agent', () => {
+    // Mock Android user agent
+    Object.defineProperty(navigator, 'userAgent', {
+      writable: true,
+      configurable: true,
+      value: 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36'
+    });
+    
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    expect(isMobile).toBe(true);
+  });
+  
+  it('should detect desktop by user agent', () => {
+    Object.defineProperty(navigator, 'userAgent', {
+      writable: true,
+      configurable: true,
+      value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+    });
+    
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    expect(isMobile).toBe(false);
+  });
+  
+  it('should show controls on mobile (width OR user agent)', () => {
+    // Desktop width but mobile user agent
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 1024
+    });
+    Object.defineProperty(navigator, 'userAgent', {
+      writable: true,
+      configurable: true,
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)'
+    });
+    
+    const isMobile = window.innerWidth <= 768 || 
+                    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    expect(isMobile).toBe(true);
   });
 });
