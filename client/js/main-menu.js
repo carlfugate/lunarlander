@@ -353,7 +353,12 @@ async function startGame(difficulty = 'simple') {
         wsClient.startGame(difficulty);
         inputHandler = new InputHandler(wsClient, () => isPaused);
         mobileControls = new MobileControls(wsClient);
-        mobileControls.show();
+        
+        // Only show mobile controls on mobile devices
+        if (window.innerWidth <= 768) {
+            mobileControls.show();
+        }
+        
         statusEl.classList.remove('visible');
     } catch (error) {
         statusEl.textContent = 'Failed to connect';
