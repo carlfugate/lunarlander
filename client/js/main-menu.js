@@ -79,6 +79,7 @@ let isPaused = false;
 
 // Menu buttons
 document.getElementById('playBtn').addEventListener('click', () => {
+    console.log('Play button clicked');
     document.querySelector('.menu-buttons').classList.add('hidden');
     document.getElementById('difficultySelect').classList.remove('hidden');
 });
@@ -285,7 +286,8 @@ function spectateGame(sessionId) {
                 statusEl.classList.add('visible');
             }
         );
-    }).catch(() => {
+    }).catch((error) => {
+        console.error('Failed to load spectate module:', error);
         isConnecting = false;
         statusEl.innerHTML = '<div style="color: #f00;">Failed to load. Press ESC for menu.</div>';
         statusEl.classList.add('visible');
