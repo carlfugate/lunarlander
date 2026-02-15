@@ -22,6 +22,7 @@ export function startSpectate(sessionId, onStart, onGameOver) {
     };
     
     wsClient.onGameOver = (data) => {
+        console.log('Spectate game over:', data);
         const result = data.landed ? 'LANDED!' : 'CRASHED!';
         const score = data.score || 0;
         const scoreText = data.landed ? `<div style="font-size: 20px; margin: 10px 0;">Score: ${score}</div>` : '';

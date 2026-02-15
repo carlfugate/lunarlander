@@ -275,6 +275,7 @@ function spectateGame(sessionId) {
                 isConnecting = false;
             },
             (result, scoreText) => {
+                console.log('Game over callback:', result, scoreText);
                 statusEl.innerHTML = `<div style="font-size: 24px;">${result}</div>${scoreText}<div>Press ESC for menu</div>`;
                 statusEl.classList.add('visible');
             }
