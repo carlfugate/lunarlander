@@ -41,6 +41,9 @@ class StateManager {
         const oldState = { ...this.state };
         this.state = { ...this.state, ...updates };
         
+        // Update global reference
+        window.gameState = this.state;
+        
         // Notify listeners
         this.listeners.forEach(listener => {
             listener(this.state, oldState);
