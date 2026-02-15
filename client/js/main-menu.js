@@ -352,13 +352,21 @@ async function startGame(difficulty = 'simple') {
         await wsClient.connect();
         wsClient.startGame(difficulty);
         inputHandler = new InputHandler(wsClient, () => isPaused);
-        mobileControls = new MobileControls(wsClient);
         
         // Show mobile controls on mobile devices or small screens
         const isMobile = window.innerWidth <= 768 || 
                         /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        console.log('isMobile:', isMobile, 'width:', window.innerWidth, 'userAgent:', navigator.userAgent);
+        
         if (isMobile) {
-            mobileControls.show();
+            try {
+                mobileControls = new MobileControls(wsClient);
+                mobileControls.show();
+                console.log('Mobile controls initialized and shown');
+            } catch (error) {
+                console.error('Error initializing mobile controls:', error);
+            }
         }
         
         statusEl.classList.remove('visible');

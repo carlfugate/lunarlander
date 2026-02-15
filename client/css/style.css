@@ -345,6 +345,8 @@ body {
 @media (max-width: 768px) {
     #mobileControls.visible {
         display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
     }
     
     #controlSwap.visible {
