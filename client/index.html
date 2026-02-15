@@ -91,7 +91,6 @@
     <div id="app" class="hidden">
         <canvas id="gameCanvas" width="1200" height="800"></canvas>
         <div id="modeIndicator"></div>
-        <div id="status">Connecting...</div>
         <div id="pauseOverlay" class="hidden">
             <div class="pause-content">
                 <h1>PAUSED</h1>
@@ -114,6 +113,8 @@
         </div>
         <button id="controlSwap" class="hidden">⇄ Swap</button>
     </div>
+    <!-- Status box outside app to avoid flex container issues -->
+    <div id="status">Connecting...</div>
     <script type="module" src="js/main-menu.js"></script>
 </body>
 </html>
