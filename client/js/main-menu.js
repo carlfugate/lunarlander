@@ -3,6 +3,7 @@ import { WebSocketClient } from './websocket.js';
 import { InputHandler } from './input.js';
 import { ReplayPlayer } from './replay.js';
 import { MobileControls } from './mobile-controls.js';
+import { logger } from './logger.js';
 import config from './config.js';
 
 const canvas = document.getElementById('gameCanvas');
@@ -314,6 +315,7 @@ async function startGame(difficulty = 'simple') {
         wsClient = new WebSocketClient(wsUrl);
         
         wsClient.onInit = (data) => {
+            logger.debug('Received init message:', data);
             gameState.terrain = data.terrain;
             gameState.lander = data.lander;
             gameState.thrusting = false;
@@ -357,11 +359,13 @@ async function startGame(difficulty = 'simple') {
         const isMobile = window.innerWidth <= 768 || 
                         /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
+        logger.debug('Mobile detection:', { isMobile, width: window.innerWidth, userAgent: navigator.userAgent });
+        
         if (isMobile) {
             try {
                 mobileControls = new MobileControls(wsClient);
                 mobileControls.show();
-                console.log('Mobile controls initialized and shown');
+                logger.info('Mobile controls initialized and shown');
             } catch (error) {
                 console.error('Error initializing mobile controls:', error);
             }

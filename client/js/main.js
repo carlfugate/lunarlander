@@ -1,6 +1,7 @@
 import { Renderer } from './renderer.js';
 import { WebSocketClient } from './websocket.js';
 import { InputHandler } from './input.js';
+import { logger } from './logger.js';
 
 const canvas = document.getElementById('gameCanvas');
 const renderer = new Renderer(canvas);
@@ -28,6 +29,18 @@ wsClient.onInit = (data) => {
 
 wsClient.onTelemetry = (data) => {
     gameState.lander = data.lander;
+    
+    // Debug telemetry logging
+    logger.debug('Telemetry:', {
+        timestamp: data.timestamp.toFixed(3),
+        y: data.lander.y.toFixed(1),
+        vy: data.lander.vy.toFixed(2),
+        fuel: data.lander.fuel.toFixed(0),
+        rotation: data.lander.rotation.toFixed(2),
+        nearest_zone: data.nearest_landing_zone ? 
+            `${data.nearest_landing_zone.direction} ${data.nearest_landing_zone.distance.toFixed(0)}px` : 
+            'none'
+    });
 };
 
 wsClient.onGameOver = (data) => {

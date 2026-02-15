@@ -1,4 +1,6 @@
 // Mobile touch controls for Lunar Lander
+import { logger } from './logger.js';
+
 export class MobileControls {
     constructor(websocketManager) {
         this.ws = websocketManager;
@@ -34,6 +36,12 @@ export class MobileControls {
     }
     
     swapControls() {
+        logger.debug('Swap controls:', { 
+            thrustOnLeft: this.thrustOnLeft,
+            leftChildren: this.leftGroup?.children.length,
+            rightChildren: this.rightGroup?.children.length
+        });
+        
         if (this.thrustOnLeft) {
             // Thrust on left (default)
             this.leftGroup.innerHTML = '';
