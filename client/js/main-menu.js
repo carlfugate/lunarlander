@@ -49,7 +49,14 @@ import { ReplayPlayer } from './replay.js';
 import { MobileControls } from './mobile-controls.js';
 import { DevTools } from './devtools.js';
 import { logger } from './logger.js';
+import { initErrorTracking, addBreadcrumb } from './error-tracking.js';
 import config from './config.js';
+
+// Initialize error tracking
+initErrorTracking();
+
+// Make gameState available globally for error context
+window.gameState = { terrain: null, lander: null, thrusting: false, altitude: 0, speed: 0 };
 
 const canvas = document.getElementById('gameCanvas');
 const renderer = new Renderer(canvas);
@@ -60,7 +67,7 @@ const appEl = document.getElementById('app');
 const modeIndicatorEl = document.getElementById('modeIndicator');
 
 /** @type {GameState} */
-let gameState = { terrain: null, lander: null, thrusting: false, altitude: 0, speed: 0 };
+let gameState = window.gameState;
 /** @type {InputHandler|null} */
 let inputHandler = null;
 /** @type {MobileControls|null} */
@@ -254,6 +261,7 @@ let isConnecting = false;
  * @param {string} sessionId - Game session ID to spectate
  */
 function spectateGame(sessionId) {
+    addBreadcrumb('Starting spectate mode', 'navigation', { sessionId });
     if (isConnecting) return;
     isConnecting = true;
     

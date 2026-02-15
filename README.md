@@ -1,5 +1,7 @@
 # 🚀 Lunar Lander
 
+![CI](https://github.com/carlfugate/lunarlander/workflows/CI/badge.svg)
+
 A modern browser-based remake of the classic 1979 Atari Lunar Lander arcade game, featuring real-time multiplayer spectating, AI support, and competitive scoring.
 
 ![Menu Screenshot](docs/images/menu.png)

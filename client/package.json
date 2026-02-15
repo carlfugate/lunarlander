@@ -12,6 +12,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
+    "@sentry/browser": "^10.38.0",
     "@vitest/ui": "^1.0.0",
     "jsdom": "^23.0.0",
     "stylelint": "^17.3.0",
