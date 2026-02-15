@@ -13,6 +13,7 @@
         <h1>Lunar Lander</h1>
         <div class="menu-buttons">
             <button id="playBtn" class="menu-btn">Play Game</button>
+            <button id="multiplayerBtn" class="menu-btn">Multiplayer</button>
             <button id="spectateBtn" class="menu-btn">Spectate Live Game</button>
             <button id="replayBtn" class="menu-btn">Watch Replay</button>
             <button id="helpBtn" class="menu-btn">How to Play</button>
@@ -90,6 +91,18 @@
             <div id="replayListContent"></div>
             <button id="backFromReplays" class="menu-btn">Back</button>
         </div>
+    </div>
+    <div id="lobby" class="hidden">
+        <h1>Multiplayer Lobby</h1>
+        <div class="lobby-buttons">
+            <button id="createRoomBtn" class="menu-btn">Create Room</button>
+            <button id="joinRoomBtn" class="menu-btn">Join Room</button>
+        </div>
+        <div id="roomList" class="room-list">
+            <h3>Available Rooms</h3>
+            <div id="roomListContent"></div>
+        </div>
+        <button id="backFromLobby" class="menu-btn">Back to Menu</button>
     </div>
     <div id="app" class="hidden">
         <canvas id="gameCanvas" width="1200" height="800"></canvas>

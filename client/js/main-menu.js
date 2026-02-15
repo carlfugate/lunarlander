@@ -52,6 +52,7 @@ import { logger } from './logger.js';
 import { stateManager } from './state.js';
 import { perfMonitor } from './performance.js';
 import config from './config.js';
+import * as lobby from './lobby.js';
 
 const canvas = document.getElementById('gameCanvas');
 const renderer = new Renderer(canvas);
@@ -122,6 +123,8 @@ window.joinRoom = async function(roomId, playerName = 'Player2') {
             statusEl.classList.add('visible');
         };
         
+        // Hide lobby and menu, show game
+        document.getElementById('lobby').style.display = 'none';
         menuEl.classList.add('hidden');
         appEl.classList.remove('hidden');
         appEl.style.display = 'block';
@@ -177,6 +180,10 @@ document.getElementById('playBtn').addEventListener('click', () => {
     console.log('Play button clicked');
     document.querySelector('.menu-buttons').classList.add('hidden');
     document.getElementById('difficultySelect').classList.remove('hidden');
+});
+
+document.getElementById('multiplayerBtn').addEventListener('click', () => {
+    lobby.showLobby();
 });
 
 // Difficulty selection
@@ -626,6 +633,7 @@ document.addEventListener('keydown', (e) => {
         }
         currentMode = null;
         appEl.classList.add('hidden');
+        document.getElementById('lobby').style.display = 'none';
         menuEl.classList.remove('hidden');
         document.querySelector('.menu-buttons').classList.remove('hidden');
         document.getElementById('difficultySelect').classList.add('hidden');

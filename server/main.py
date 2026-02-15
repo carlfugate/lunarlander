@@ -80,6 +80,25 @@ async def list_active_games(request: Request):
         })
     return {"games": games}
 
+@app.get("/rooms")
+@limiter.limit("30/minute")
+async def list_active_rooms(request: Request):
+    """List all active rooms with at least 1 player"""
+    cleanup_stale_sessions()
+    
+    rooms = []
+    for session_id, session in sessions.items():
+        player_count = len(session.players)
+        if player_count > 0:
+            rooms.append({
+                "room_id": session_id,
+                "player_count": player_count,
+                "max_players": 8,
+                "difficulty": session.difficulty,
+                "status": "playing" if session.running else "lobby"
+            })
+    return rooms
+
 @app.websocket("/spectate/{session_id}")
 async def spectate_game(websocket: WebSocket, session_id: str):
     await websocket.accept()
