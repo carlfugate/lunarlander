@@ -355,6 +355,12 @@ async function startGame(difficulty = 'simple') {
             console.log('statusEl computed display:', window.getComputedStyle(statusEl).display);
             console.log('statusEl position:', statusEl.getBoundingClientRect());
             console.log('statusEl innerHTML length:', statusEl.innerHTML.length);
+            const computed = window.getComputedStyle(statusEl);
+            console.log('statusEl opacity:', computed.opacity);
+            console.log('statusEl visibility:', computed.visibility);
+            console.log('statusEl color:', computed.color);
+            console.log('statusEl background:', computed.background);
+            console.log('statusEl z-index:', computed.zIndex);
         };
         
         await wsClient.connect();
