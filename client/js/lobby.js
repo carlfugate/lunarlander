@@ -1,3 +1,6 @@
+import { WebSocketClient } from './websocket.js';
+import config from './config.js';
+
 export function showLobby() {
     document.getElementById('menu').style.display = 'none';
     document.getElementById('lobby').style.display = 'block';
@@ -31,12 +34,35 @@ function joinRoom(roomId) {
     console.log('Joining room:', roomId);
 }
 
+async function createRoom(playerName) {
+    try {
+        const wsUrl = `${config.WS_PROTOCOL}//${config.WS_HOST}/ws`;
+        const wsClient = new WebSocketClient(wsUrl);
+        
+        await wsClient.connect();
+        await wsClient.createRoom(playerName);
+        
+        // Transition to game screen
+        document.getElementById('lobby').style.display = 'none';
+        document.getElementById('menu').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        document.getElementById('app').classList.remove('hidden');
+        document.getElementById('modeIndicator').textContent = 'MULTIPLAYER';
+        
+        window.dispatchEvent(new Event('resize'));
+        
+    } catch (error) {
+        console.error('Failed to create room:', error);
+        alert('Failed to create room. Please try again.');
+    }
+}
+
 // Event handlers
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('create-room-btn').onclick = () => {
         const roomName = prompt('Enter room name:');
         if (roomName) {
-            console.log('Creating room:', roomName);
+            createRoom(roomName);
         }
     };
     

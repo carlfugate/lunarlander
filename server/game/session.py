@@ -171,8 +171,6 @@ class GameSession:
         message = {
             "type": "telemetry",
             "timestamp": time.time(),
-            "lander": self.lander.to_dict(),  # Backward compatibility
-            "players": players_data,  # New multiplayer data
             "terrain_height": terrain_height,
             "altitude": altitude_above_terrain,
             "speed": speed,
@@ -181,6 +179,14 @@ class GameSession:
             "all_landing_zones": self.terrain.landing_zones,
             "spectator_count": len(self.spectators)
         }
+        
+        # Single-player vs multiplayer format
+        if len(self.players) == 1 and 'default' in self.players:
+            # Send single-player format (backward compatible)
+            message['lander'] = self.players['default']['lander'].to_dict()
+        else:
+            # Send multiplayer format
+            message['players'] = players_data
         
         # Advanced telemetry (only for AI clients)
         if self.telemetry_mode == "advanced":

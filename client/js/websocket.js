@@ -18,6 +18,7 @@ export class WebSocketClient {
         this.onError = null;
         this.lastPingTime = null;
         this.pingInterval = null;
+        this.isMultiplayer = false;
     }
     
     /**
@@ -142,6 +143,8 @@ export class WebSocketClient {
      * @param {string} roomId - Room ID to display
      */
     _displayRoomId(roomId) {
+        if (!this.isMultiplayer) return;
+        
         let roomDiv = document.getElementById('room-display');
         if (!roomDiv) {
             roomDiv = document.createElement('div');
@@ -150,6 +153,24 @@ export class WebSocketClient {
             document.body.appendChild(roomDiv);
         }
         roomDiv.textContent = `Room: ${roomId}`;
+    }
+    
+    /**
+     * Create a new room
+     * @param {string} [playerName='Player1'] - Player name
+     * @returns {Promise<void>}
+     */
+    async createRoom(playerName = 'Player1') {
+        if (!this.connected) {
+            await this.connect();
+        }
+        
+        this.isMultiplayer = true;
+        
+        this.send({
+            type: 'create_room',
+            player_name: playerName
+        });
     }
     
     /**
@@ -162,6 +183,8 @@ export class WebSocketClient {
         if (!this.connected) {
             await this.connect();
         }
+        
+        this.isMultiplayer = true;
         
         return new Promise((resolve) => {
             this.send({
@@ -187,6 +210,8 @@ export class WebSocketClient {
      * @param {number} [updateRate=60] - Update rate in Hz
      */
     startGame(difficulty = 'simple', token = null, telemetryMode = 'standard', updateRate = 60) {
+        this.isMultiplayer = false;
+        
         const message = {
             type: 'start',
             difficulty: difficulty,

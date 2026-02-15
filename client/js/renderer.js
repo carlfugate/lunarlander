@@ -480,18 +480,18 @@ export class Renderer {
         this.drawTerrain(gameState.terrain, gameState.lander);
         this.drawParticles();
         
-        // Handle both single player (backward compatibility) and multiplayer
+        // Debug logging for rendering paths
         if (gameState.lander) {
-            // Single player mode
+            console.log('Single-player mode');
             this.drawLander(gameState.lander, thrusting);
             this.drawHUD(gameState.lander, gameState.altitude, gameState.speed, gameState.spectatorCount);
         } else if (gameState.players) {
-            // Multiplayer mode
-            console.log(`Rendering multiplayer mode with ${Object.keys(gameState.players).length} players`);
+            console.log('Multiplayer mode');
             for (const [playerId, player] of Object.entries(gameState.players)) {
-                console.log(`Player: ${player.name}, Color: ${player.color}`);
                 this.drawLander(player.lander, player.thrusting, player.color, player.name);
             }
+        } else {
+            console.log('No game state');
         }
     }
 }
