@@ -201,8 +201,8 @@ body {
 
 #mobileMenuControls {
     position: fixed;
-    bottom: 120px;
-    right: 20px;
+    top: 100px;
+    right: 10px;
     display: none;
     flex-direction: row;
     gap: 10px;
