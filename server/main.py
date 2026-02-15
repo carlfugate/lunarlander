@@ -380,34 +380,30 @@ async def websocket_endpoint(websocket: WebSocket):
             session = sessions[session_id]
             
             # Find and remove disconnected player
-            disconnected_player_id = None
-            disconnected_player_name = None
-            
             for pid, player in list(session.players.items()):
                 if player['websocket'] == websocket:
-                    disconnected_player_id = pid
                     disconnected_player_name = player['name']
                     session.remove_player(pid)
+                    
+                    # Broadcast player_left to remaining players
+                    if session.players:
+                        left_message = {
+                            "type": "player_left",
+                            "player_id": pid,
+                            "player_name": disconnected_player_name
+                        }
+                        
+                        for remaining_pid, remaining_player in session.players.items():
+                            try:
+                                await remaining_player['websocket'].send_text(json.dumps(left_message))
+                            except:
+                                pass
                     break
             
-            # Broadcast player_left to remaining players
-            if disconnected_player_id and session.players:
-                left_message = {
-                    "type": "player_left",
-                    "player_id": disconnected_player_id,
-                    "player_name": disconnected_player_name
-                }
-                
-                for pid, player in session.players.items():
-                    try:
-                        await player['websocket'].send_text(json.dumps(left_message))
-                    except:
-                        pass
-            
-            # Save replay and cleanup if no players left
-            if not session.players:
+            # Only delete session if no players left
+            if session_id in sessions and not sessions[session_id].players:
                 # Save replay before deleting session
-                if session and session.replay:
+                if session.replay:
                     replay_id = f"{session_id}_{int(time.time())}"
                     
                     # Enforce replay limit
