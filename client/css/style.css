@@ -137,7 +137,6 @@ body {
 #helpScreen h2 {
     color: #0f0;
     margin-bottom: 10px;
-}
     outline: 2px solid #0f0;
     outline-offset: 2px;
 }
@@ -163,7 +162,6 @@ body {
     justify-content: center;
     align-items: center;
     background: #000;
-}
 }
 
 #gameCanvas {

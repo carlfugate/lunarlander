@@ -333,7 +333,6 @@ async function startGame(difficulty = 'simple') {
         };
         
         wsClient.onGameOver = (data) => {
-            console.log('Game over handler called:', data);
             gameActive = false;
             const result = data.landed ? 'LANDED!' : 'CRASHED!';
             const score = data.score || 0;
@@ -347,28 +346,8 @@ async function startGame(difficulty = 'simple') {
             `;
             statusEl.style.color = data.landed ? '#0f0' : '#f00';
             statusEl.style.borderColor = data.landed ? '#0f0' : '#f00';
-            statusEl.style.display = 'block';
-            console.log('Removing hidden, adding visible class to statusEl');
             statusEl.classList.remove('hidden');
             statusEl.classList.add('visible');
-            console.log('statusEl classes:', statusEl.className);
-            console.log('statusEl computed display:', window.getComputedStyle(statusEl).display);
-            console.log('statusEl position:', statusEl.getBoundingClientRect());
-            console.log('statusEl innerHTML length:', statusEl.innerHTML.length);
-            const computed = window.getComputedStyle(statusEl);
-            console.log('statusEl opacity:', computed.opacity);
-            console.log('statusEl visibility:', computed.visibility);
-            console.log('statusEl color:', computed.color);
-            console.log('statusEl background:', computed.background);
-            console.log('statusEl z-index:', computed.zIndex);
-            console.log('statusEl position:', computed.position);
-            console.log('statusEl border:', computed.border);
-            
-            // Force inline styles as fallback
-            statusEl.style.zIndex = '2000';
-            statusEl.style.position = 'fixed';
-            statusEl.style.background = 'rgba(0, 0, 0, 0.9)';
-            console.log('After inline styles - z-index:', window.getComputedStyle(statusEl).zIndex);
         };
         
         await wsClient.connect();
