@@ -13,7 +13,7 @@ export function hideLobby() {
 }
 
 export async function fetchRooms() {
-    const response = await fetch('/rooms');
+    const response = await fetch(`${config.API_URL}/rooms`);
     return await response.json();
 }
 
