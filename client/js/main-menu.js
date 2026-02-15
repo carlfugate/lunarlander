@@ -354,8 +354,10 @@ async function startGame(difficulty = 'simple') {
         inputHandler = new InputHandler(wsClient, () => isPaused);
         mobileControls = new MobileControls(wsClient);
         
-        // Only show mobile controls on mobile devices
-        if (window.innerWidth <= 768) {
+        // Show mobile controls on mobile devices or small screens
+        const isMobile = window.innerWidth <= 768 || 
+                        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) {
             mobileControls.show();
         }
         
