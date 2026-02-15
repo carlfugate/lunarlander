@@ -1,25 +1,38 @@
 /* Dev Tools Panel */
 #devTools {
     position: fixed;
-    bottom: 0;
-    right: 0;
-    width: 300px;
-    max-height: 400px;
+    bottom: 10px;
+    right: 10px;
+    width: 280px;
+    max-height: 350px;
     background: rgba(0, 0, 0, 0.95);
     border: 2px solid #0f0;
-    border-bottom: none;
-    border-right: none;
+    border-radius: 5px;
     color: #0f0;
     font-family: monospace;
-    font-size: 12px;
+    font-size: 11px;
     padding: 10px;
     overflow-y: auto;
-    z-index: 9999;
+    z-index: 10000;
     transition: transform 0.3s ease;
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+}
+
+#devTools::-webkit-scrollbar {
+    width: 8px;
+}
+
+#devTools::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+#devTools::-webkit-scrollbar-thumb {
+    background: #0f0;
+    border-radius: 4px;
 }
 
 #devTools.hidden {
-    transform: translateY(100%);
+    transform: translateX(calc(100% + 20px));
 }
 
 #devTools h3 {
