@@ -1,23 +1,3 @@
-import { logger } from './logger.js';
-
-// Global error handlers
-window.addEventListener('error', (e) => {
-    logger.error('Unhandled error:', {
-        message: e.message,
-        filename: e.filename,
-        lineno: e.lineno,
-        colno: e.colno,
-        error: e.error?.stack
-    });
-});
-
-window.addEventListener('unhandledrejection', (e) => {
-    logger.error('Unhandled promise rejection:', {
-        reason: e.reason,
-        promise: e.promise
-    });
-});
-
 // Debug logging utility with environment-based control
 // Enable with: ?debug=true in URL or localStorage.setItem('debug', 'true') in console
 
@@ -83,3 +63,21 @@ logger.storage = () => {
     }
     logger.debug('LocalStorage:', storage);
 };
+
+// Global error handlers - must be after logger definition
+window.addEventListener('error', (e) => {
+    logger.error('Unhandled error:', {
+        message: e.message,
+        filename: e.filename,
+        lineno: e.lineno,
+        colno: e.colno,
+        error: e.error?.stack
+    });
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+    logger.error('Unhandled promise rejection:', {
+        reason: e.reason,
+        promise: e.promise
+    });
+});
