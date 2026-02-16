@@ -27,17 +27,69 @@ export function renderRoomList(rooms) {
     
     roomList.innerHTML = '';
     
+    if (rooms.length === 0) {
+        roomList.innerHTML = '<div class="no-rooms">No active rooms available</div>';
+        return;
+    }
+    
     rooms.forEach(room => {
         const roomItem = document.createElement('div');
         roomItem.className = 'room-item';
-        roomItem.textContent = room.name;
+        roomItem.innerHTML = `
+            <div class="room-name">${room.name || `Room ${room.id.substring(0, 8)}`}</div>
+            <div class="room-info">${room.player_count}/${room.max_players} players - ${room.status}</div>
+        `;
         roomItem.onclick = () => joinRoom(room.id);
         roomList.appendChild(roomItem);
     });
 }
 
-function joinRoom(roomId) {
+async function joinRoom(roomId) {
     console.log('Joining room:', roomId);
+    
+    const playerName = prompt('Enter your player name:') || 'Player';
+    if (!playerName.trim()) return;
+    
+    try {
+        const wsUrl = `${config.WS_PROTOCOL}//${config.WS_HOST}/ws`;
+        const wsClient = new WebSocketClient(wsUrl);
+        
+        await wsClient.connect();
+        
+        // Set up game initialization callback
+        wsClient.onInit = (data) => {
+            console.log('✓ Multiplayer game initialized');
+            // Initialize game UI components
+            if (window.gameState) {
+                window.gameState.terrain = data.terrain;
+                window.gameState.lander = data.lander;
+            }
+            if (window.inputHandler) {
+                window.inputHandler.wsClient = wsClient;
+            }
+        };
+        
+        await wsClient.joinRoom(roomId, playerName.trim());
+        
+        // Transition to game screen
+        document.getElementById('lobby').style.display = 'none';
+        document.getElementById('menu').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        document.getElementById('app').classList.remove('hidden');
+        document.getElementById('modeIndicator').textContent = 'MULTIPLAYER';
+        
+        // Initialize game components
+        if (!window.inputHandler && wsClient) {
+            const { InputHandler } = await import('./input.js');
+            window.inputHandler = new InputHandler(wsClient);
+        }
+        
+        window.dispatchEvent(new Event('resize'));
+        
+    } catch (error) {
+        console.error('Failed to join room:', error);
+        alert('Failed to join room. Please try again.');
+    }
 }
 
 async function createRoom(playerName) {
@@ -88,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const createBtn = document.getElementById('createRoomBtn');
     const joinBtn = document.getElementById('joinRoomBtn');
     const backBtn = document.getElementById('backFromLobby');
+    const refreshBtn = document.getElementById('refreshRoomsBtn');
     
     if (createBtn) {
         createBtn.onclick = () => {
@@ -100,6 +153,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (joinBtn) {
         joinBtn.onclick = () => {
+            fetchRooms().then(rooms => renderRoomList(rooms));
+        };
+    }
+    
+    if (refreshBtn) {
+        refreshBtn.onclick = () => {
             fetchRooms().then(rooms => renderRoomList(rooms));
         };
     }

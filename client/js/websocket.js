@@ -187,19 +187,26 @@ export class WebSocketClient {
         
         this.isMultiplayer = true;
         
-        return new Promise((resolve) => {
-            this.send({
-                type: 'join_room',
-                room_id: roomId,
-                player_name: playerName
-            });
+        this.send({
+            type: 'join_room',
+            room_id: roomId,
+            player_name: playerName
+        });
+        
+        // Wait for initialization message from server
+        return new Promise((resolve, reject) => {
+            const originalOnInit = this.onInit;
+            const timeout = setTimeout(() => {
+                reject(new Error('Join room timeout'));
+            }, 10000); // 10 second timeout
             
-            // Trigger game UI start after joining room
-            if (this.onInit) {
-                this.onInit({ terrain: null, lander: null });
-            }
-            
-            resolve();
+            this.onInit = (data) => {
+                clearTimeout(timeout);
+                if (originalOnInit) {
+                    originalOnInit(data);
+                }
+                resolve();
+            };
         });
     }
     
