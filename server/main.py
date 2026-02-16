@@ -351,6 +351,92 @@ async def websocket_endpoint(websocket: WebSocket):
             await game_task
             message_task.cancel()
             
+        elif message.get("type") == "create_room":
+            difficulty = message.get("difficulty", "simple")
+            player_name = message.get("player_name", "Player")
+            
+            # Validate difficulty
+            if difficulty not in ["simple", "medium", "hard"]:
+                difficulty = "simple"
+            
+            session = GameSession(session_id, websocket, difficulty, "standard", 60)
+            session.user_id = user_id
+            
+            # Update default player name and ensure player is added
+            session.players["default"]["name"] = player_name
+            session.players["default"]["websocket"] = websocket
+            
+            sessions[session_id] = session
+            # Keep session.waiting = True for multiplayer rooms
+            
+            # Send room_id back to client
+            await websocket.send_text(json.dumps({
+                "type": "room_created",
+                "room_id": session_id
+            }))
+            
+            # Send current player list
+            await session.send_player_list()
+            
+            # Send initial state
+            await session.send_initial_state()
+            
+            # Start game loop in background (will wait until game starts)
+            game_task = asyncio.create_task(session.start())
+            
+            # Handle incoming messages in parallel
+            async def handle_messages():
+                while session.running:
+                    try:
+                        data = await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
+                        
+                        # Validate message size
+                        if len(data) > 1024:
+                            print(f"Message too large from {session_id}")
+                            break
+                        
+                        msg = json.loads(data)
+                        
+                        # Validate message structure
+                        if not isinstance(msg, dict):
+                            continue
+                        
+                        if msg.get("type") == "input":
+                            action = msg.get("action")
+                            # Validate action
+                            if action in ["thrust", "thrust_on", "thrust_off", "rotate_left", "rotate_right", "rotate_stop"]:
+                                session.handle_input(action, "default")
+                            else:
+                                print(f"Invalid action from {session_id}: {action}")
+                        elif msg.get("type") == "start_game":
+                            # Only room creator (default player) can start the game
+                            if session.waiting:
+                                session.start_game()
+                                # Broadcast game_started to all players
+                                start_message = {"type": "game_started"}
+                                for pid, player in session.players.items():
+                                    try:
+                                        await player['websocket'].send_text(json.dumps(start_message))
+                                    except:
+                                        pass
+                        elif msg.get("type") == "ping":
+                            # Respond to ping with pong
+                            await websocket.send_text(json.dumps({"type": "pong"}))
+                    except asyncio.TimeoutError:
+                        continue
+                    except json.JSONDecodeError:
+                        print(f"Invalid JSON from {session_id}")
+                        break
+                    except Exception as e:
+                        print(f"Message handling error: {e}")
+                        break
+            
+            message_task = asyncio.create_task(handle_messages())
+            
+            # Wait for game to end
+            await game_task
+            message_task.cancel()
+            
         elif message.get("type") == "join_room":
             room_id = message.get("room_id")
             player_name = message.get("player_name", "Player")
