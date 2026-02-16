@@ -280,10 +280,22 @@ function updatePlayerList(players) {
 }
 
 async function startMultiplayerGame(wsClient) {
+    console.log('Starting multiplayer game...');
     hideWaitingLobby();
+    
+    let firstTelemetryReceived = false;
     
     // Set up game callbacks
     wsClient.onTelemetry = async (data) => {
+        if (!firstTelemetryReceived) {
+            console.log('First telemetry data received:', {
+                players: data.players,
+                terrain: data.terrain,
+                dataKeys: Object.keys(data)
+            });
+            firstTelemetryReceived = true;
+        }
+        
         const { stateManager } = await import('./state.js');
         const stateUpdate = {
             terrain: data.terrain || stateManager.state.terrain,
@@ -303,6 +315,8 @@ async function startMultiplayerGame(wsClient) {
         
         stateManager.setState(stateUpdate);
     };
+    
+    console.log('onTelemetry handler set up');
     
     wsClient.onGameOver = (data) => {
         const statusEl = document.getElementById('status');
@@ -343,9 +357,20 @@ async function startMultiplayerGame(wsClient) {
     const { stateManager } = await import('./state.js');
     stateManager.setState({ terrain: null, lander: null, players: null, thrusting: false });
     
+    // Check if renderer exists and reset it
+    if (window.renderer && window.renderer.reset) {
+        console.log('renderer.reset() called');
+        window.renderer.reset();
+    } else {
+        console.log('renderer.reset() NOT called - renderer not available');
+    }
+    
     // Start the game loop
     if (window.startGameLoop) {
+        console.log('Game loop starting');
         window.startGameLoop();
+    } else {
+        console.log('Game loop NOT started - startGameLoop function not available');
     }
     
     window.dispatchEvent(new Event('resize'));
