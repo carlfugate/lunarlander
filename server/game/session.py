@@ -25,7 +25,8 @@ class GameSession:
             'rotate': None,
             'websocket': websocket,
             'name': 'Player',
-            'color': '#00ff00'
+            'color': '#00ff00',
+            'status': 'playing'  # playing, crashed, landed
         }
         
         # Keep reference for backward compatibility
@@ -99,6 +100,11 @@ class GameSession:
             # Update physics for all players
             for player_id, player in self.players.items():
                 lander = player['lander']
+                
+                # Skip if player is already done
+                if player['status'] != 'playing':
+                    continue
+                    
                 lander.update(dt, player['thrust'], player['rotate'])
                 
                 # Check collision
@@ -109,6 +115,12 @@ class GameSession:
                 # Check bounds
                 if lander.x < 0 or lander.x > self.terrain.width:
                     lander.crashed = True
+                
+                # Update player status
+                if lander.crashed:
+                    player['status'] = 'crashed'
+                elif lander.landed:
+                    player['status'] = 'landed'
             
             # Update backward compatibility references (use first player)
             if self.players:
@@ -133,11 +145,11 @@ class GameSession:
                 speed = (self.lander.vx**2 + self.lander.vy**2)**0.5
                 print(f"[{current_time:.3f}] Alt: {800-self.lander.y:.0f}, Speed: {speed:.1f}, X: {self.lander.x:.0f}, Landing: {self.terrain.is_landing_zone(self.lander.x)[0]}")
             
-            # Check game over (any player crashed/landed ends game for now)
-            game_over = any(player['lander'].crashed or player['lander'].landed for player in self.players.values())
+            # Check game over - only when ALL players are done
+            all_players_done = all(player['status'] != 'playing' for player in self.players.values())
             
-            if game_over:
-                # Send final telemetry with crashed/landed state
+            if all_players_done:
+                # Send final telemetry with all player states
                 await self.send_telemetry(send_to_spectators=True)
                 await self.send_game_over()
                 self.running = False
@@ -194,7 +206,8 @@ class GameSession:
                 'lander': lander.to_dict(),
                 'name': player['name'],
                 'color': player['color'],
-                'thrusting': player['thrust']
+                'thrusting': player['thrust'],
+                'status': player['status']
             }
         
         # Standard telemetry (always included)
@@ -462,7 +475,8 @@ class GameSession:
             'rotate': None,
             'websocket': websocket,
             'name': name,
-            'color': color
+            'color': color,
+            'status': 'playing'
         }
         print(f"[{time.time():.3f}] Player {player_id} ({name}) joined")
     
