@@ -135,6 +135,25 @@
     <!-- Status box outside app to avoid flex container issues -->
     <div id="status" class="hidden">Connecting...</div>
     
+    <!-- Create Room Modal -->
+    <div id="createRoomModal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Create Room</h2>
+            <div class="modal-field">
+                <label for="playerNameInput">Player Name:</label>
+                <input type="text" id="playerNameInput" maxlength="20" placeholder="Enter your name">
+            </div>
+            <div class="modal-field">
+                <label for="roomNameInput">Room Name:</label>
+                <input type="text" id="roomNameInput" maxlength="30" placeholder="Enter room name">
+            </div>
+            <div class="modal-buttons">
+                <button id="createRoomConfirm" class="modal-btn primary">Create</button>
+                <button id="createRoomCancel" class="modal-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
     <!-- Dev Tools Panel (toggle with ` key) -->
     <div id="devTools" class="hidden">
         <h3>Dev Tools (Press ` to toggle)</h3>

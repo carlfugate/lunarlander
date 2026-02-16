@@ -78,13 +78,24 @@ async function joinRoom(roomId) {
     }
 }
 
-async function createRoom() {
-    const playerName = prompt('Enter your name:');
-    if (!playerName) return;
+function showCreateRoomModal() {
+    const modal = document.getElementById('createRoomModal');
+    const playerInput = document.getElementById('playerNameInput');
+    const roomInput = document.getElementById('roomNameInput');
     
-    const roomName = prompt('Enter room name:');
-    if (!roomName) return;
+    // Clear previous values
+    playerInput.value = '';
+    roomInput.value = '';
     
+    modal.classList.remove('hidden');
+    playerInput.focus();
+}
+
+function hideCreateRoomModal() {
+    document.getElementById('createRoomModal').classList.add('hidden');
+}
+
+async function createRoom(playerName, roomName) {
     try {
         const wsUrl = `${config.WS_PROTOCOL}//${config.WS_HOST}/ws`;
         const wsClient = new WebSocketClient(wsUrl);
@@ -120,10 +131,66 @@ document.addEventListener('DOMContentLoaded', () => {
     const backBtn = document.getElementById('backFromLobby');
     const refreshBtn = document.getElementById('refreshRoomsBtn');
     
+    // Modal elements
+    const modal = document.getElementById('createRoomModal');
+    const confirmBtn = document.getElementById('createRoomConfirm');
+    const cancelBtn = document.getElementById('createRoomCancel');
+    const playerInput = document.getElementById('playerNameInput');
+    const roomInput = document.getElementById('roomNameInput');
+    
     if (createBtn && !createBtn.onclick) {
         createBtn.onclick = () => {
-            createRoom();
+            showCreateRoomModal();
         };
+    }
+    
+    if (confirmBtn) {
+        confirmBtn.onclick = () => {
+            const playerName = playerInput.value.trim();
+            const roomName = roomInput.value.trim();
+            
+            if (!playerName) {
+                playerInput.focus();
+                return;
+            }
+            if (!roomName) {
+                roomInput.focus();
+                return;
+            }
+            
+            hideCreateRoomModal();
+            createRoom(playerName, roomName);
+        };
+    }
+    
+    if (cancelBtn) {
+        cancelBtn.onclick = hideCreateRoomModal;
+    }
+    
+    // Handle Enter key in modal inputs
+    if (playerInput) {
+        playerInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                roomInput.focus();
+            }
+        });
+    }
+    
+    if (roomInput) {
+        roomInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                confirmBtn.click();
+            }
+        });
+    }
+    
+    // Handle Escape key to close modal
+    if (modal) {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                hideCreateRoomModal();
+            }
+        });
     }
     
     if (joinBtn) {

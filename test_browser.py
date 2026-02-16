@@ -13,7 +13,7 @@ async def test_game(url="http://localhost", action="play"):
     
     Args:
         url: Base URL of the game
-        action: 'play' for single-player, 'multiplayer' for multiplayer lobby
+        action: 'play' for single-player, 'multiplayer' for multiplayer lobby, 'create_room' for room creation test
     """
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -27,6 +27,28 @@ async def test_game(url="http://localhost", action="play"):
         # Capture errors
         errors = []
         page.on("pageerror", lambda err: errors.append(f"PAGE ERROR: {err}"))
+        
+        # Track prompts for create_room action
+        prompt_count = 0
+        prompts_data = []
+        
+        async def handle_dialog(dialog):
+            nonlocal prompt_count
+            prompt_count += 1
+            prompt_message = dialog.message
+            prompts_data.append(prompt_message)
+            print(f"Prompt {prompt_count}: {prompt_message}")
+            
+            # Auto-fill with test data
+            if prompt_count == 1:
+                await dialog.accept("TestPlayer")
+            elif prompt_count == 2:
+                await dialog.accept("TestRoom")
+            else:
+                await dialog.accept("UnexpectedPrompt")
+        
+        if action == "create_room":
+            page.on("dialog", handle_dialog)
         
         try:
             print(f"Loading {url}...")
@@ -57,6 +79,35 @@ async def test_game(url="http://localhost", action="play"):
                 # Wait for lobby
                 await page.wait_for_selector('#lobby', timeout=5000)
                 print("✓ Lobby loaded")
+                
+            elif action == "create_room":
+                print("Testing room creation...")
+                
+                # Click Multiplayer button
+                print("Clicking 'Multiplayer'...")
+                await page.click('button:has-text("Multiplayer")')
+                
+                # Wait for lobby
+                await page.wait_for_selector('#lobby', timeout=5000)
+                print("✓ Lobby loaded")
+                
+                # Click Create Room button
+                print("Clicking 'Create Room'...")
+                await page.click('button:has-text("Create Room")')
+                
+                # Wait for prompts to complete
+                await page.wait_for_timeout(2000)
+                
+                print(f"\n=== PROMPT TEST RESULTS ===")
+                print(f"Total prompts: {prompt_count}")
+                for i, prompt_msg in enumerate(prompts_data, 1):
+                    print(f"Prompt {i}: '{prompt_msg}'")
+                
+                if prompt_count == 2:
+                    print("✓ Correct number of prompts (2)")
+                else:
+                    print(f"✗ Expected 2 prompts, got {prompt_count}")
+                    return 1
                 
             # Wait a bit for any async operations
             await page.wait_for_timeout(3000)
