@@ -201,6 +201,7 @@ class GameSession:
         message = {
             "type": "telemetry",
             "timestamp": time.time(),
+            "terrain": self.terrain.to_dict(),
             "terrain_height": terrain_height,
             "altitude": altitude_above_terrain,
             "speed": speed,
