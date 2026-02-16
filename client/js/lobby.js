@@ -59,7 +59,7 @@ async function joinRoom(roomId) {
         // Set up waiting lobby callbacks
         wsClient.onInit = async (data) => {
             console.log('✓ Joined room, showing waiting lobby');
-            showWaitingLobby(wsClient, false, roomId); // false = not room creator
+            showWaitingLobby(wsClient, false, roomId, null); // false = not room creator, no custom room name
         };
         
         wsClient.onPlayerList = (data) => {
@@ -111,7 +111,7 @@ async function createRoom(playerName, roomName) {
         // Set up waiting lobby callbacks
         wsClient.onInit = async (data) => {
             console.log('✓ Room created, showing waiting lobby');
-            showWaitingLobby(wsClient, true, roomId); // true = is room creator
+            showWaitingLobby(wsClient, true, roomId, roomName); // Pass roomName
         };
         
         wsClient.onRoomCreated = (data) => {
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function showWaitingLobby(wsClient, isCreator, roomId) {
+function showWaitingLobby(wsClient, isCreator, roomId, roomName = null) {
     // Hide lobby and menu
     document.getElementById('lobby').classList.add('hidden');
     document.getElementById('menu').classList.add('hidden');
@@ -233,8 +233,9 @@ function showWaitingLobby(wsClient, isCreator, roomId) {
     const waitingLobby = document.getElementById('waitingLobby');
     waitingLobby.classList.remove('hidden');
     
-    // Update room info
-    document.getElementById('roomName').textContent = `Room: ${roomId ? roomId.substring(0, 8) : 'Loading...'}`;
+    // Update room info - show room name if available, otherwise show room ID
+    const displayName = roomName || (roomId ? roomId.substring(0, 8) : 'Loading...');
+    document.getElementById('roomName').textContent = `Room: ${displayName}`;
     
     // Show/hide controls based on creator status
     const startBtn = document.getElementById('startGameBtn');
@@ -248,8 +249,9 @@ function showWaitingLobby(wsClient, isCreator, roomId) {
         waitingMsg.classList.remove('hidden');
     }
     
-    // Add event listeners
+    // Add event listeners with debugging
     startBtn.onclick = () => {
+        console.log('Start Game button clicked - sending start_game message');
         wsClient.send({ type: 'start_game' });
     };
     
