@@ -102,7 +102,7 @@ async function createRoom() {
             await startMultiplayerGame(wsClient);
         };
         
-        await wsClient.createRoom(roomName, playerName);
+        await wsClient.createRoom(playerName);
         
         // Store wsClient globally
         window.wsClient = wsClient;
