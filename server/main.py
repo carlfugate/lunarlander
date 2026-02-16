@@ -91,7 +91,8 @@ async def list_active_rooms(request: Request):
         player_count = len(session.players)
         if player_count > 0:
             rooms.append({
-                "room_id": session_id,
+                "id": session_id,
+                "name": f"Room {session_id[:8]}",
                 "player_count": player_count,
                 "max_players": 8,
                 "difficulty": session.difficulty,
@@ -274,8 +275,9 @@ async def websocket_endpoint(websocket: WebSocket):
             session.bot_version = bot_version
             session.bot_author = bot_author
             
-            # Update default player name
+            # Update default player name and ensure player is added
             session.players["default"]["name"] = player_name
+            session.players["default"]["websocket"] = websocket
             
             sessions[session_id] = session
             

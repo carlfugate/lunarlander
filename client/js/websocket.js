@@ -168,7 +168,8 @@ export class WebSocketClient {
         this.isMultiplayer = true;
         
         this.send({
-            type: 'create_room',
+            type: 'start',
+            difficulty: 'simple',
             player_name: playerName
         });
     }

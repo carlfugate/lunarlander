@@ -46,6 +46,20 @@ async function createRoom(playerName) {
         const wsClient = new WebSocketClient(wsUrl);
         
         await wsClient.connect();
+        
+        // Set up game initialization callback
+        wsClient.onInit = (data) => {
+            console.log('✓ Multiplayer game initialized');
+            // Initialize game UI components
+            if (window.gameState) {
+                window.gameState.terrain = data.terrain;
+                window.gameState.lander = data.lander;
+            }
+            if (window.inputHandler) {
+                window.inputHandler.wsClient = wsClient;
+            }
+        };
+        
         await wsClient.createRoom(playerName);
         
         // Transition to game screen
@@ -54,6 +68,12 @@ async function createRoom(playerName) {
         document.getElementById('app').style.display = 'block';
         document.getElementById('app').classList.remove('hidden');
         document.getElementById('modeIndicator').textContent = 'MULTIPLAYER';
+        
+        // Initialize game components
+        if (!window.inputHandler && wsClient) {
+            const { InputHandler } = await import('./input.js');
+            window.inputHandler = new InputHandler(wsClient);
+        }
         
         window.dispatchEvent(new Event('resize'));
         
