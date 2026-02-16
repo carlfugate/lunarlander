@@ -603,6 +603,11 @@ function startGameLoop() {
     }
 }
 
+// Make functions globally available for multiplayer
+window.startGameLoop = startGameLoop;
+window.stopGameLoop = stopGameLoop;
+window.setCurrentMode = (mode) => { currentMode = mode; };
+
 document.addEventListener('keydown', (e) => {
     // F key - toggle performance monitor
     if (e.key === 'f' || e.key === 'F') {

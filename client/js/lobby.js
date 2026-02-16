@@ -56,20 +56,63 @@ async function joinRoom(roomId) {
         
         await wsClient.connect();
         
-        // Set up game initialization callback
-        wsClient.onInit = (data) => {
+        // Set up all game callbacks (matching single-player setup)
+        wsClient.onInit = async (data) => {
             console.log('✓ Multiplayer game initialized');
-            // Initialize game UI components
-            if (window.gameState) {
-                window.gameState.terrain = data.terrain;
-                window.gameState.lander = data.lander;
-            }
+            const { stateManager } = await import('./state.js');
+            stateManager.setState({ terrain: data.terrain, lander: data.lander, thrusting: false });
             if (window.inputHandler) {
                 window.inputHandler.wsClient = wsClient;
             }
+            // Start the game loop
+            if (window.startGameLoop) {
+                window.startGameLoop();
+            }
+        };
+        
+        wsClient.onTelemetry = async (data) => {
+            const { stateManager } = await import('./state.js');
+            const stateUpdate = {
+                terrain: data.terrain || stateManager.state.terrain,
+                thrusting: data.thrusting || false,
+                altitude: data.altitude || 0,
+                speed: data.speed || 0,
+                spectatorCount: data.spectator_count
+            };
+            
+            if (data.players) {
+                stateUpdate.players = data.players;
+                stateUpdate.lander = null;
+            } else {
+                stateUpdate.lander = data.lander;
+                stateUpdate.players = null;
+            }
+            
+            stateManager.setState(stateUpdate);
+        };
+        
+        wsClient.onGameOver = (data) => {
+            const statusEl = document.getElementById('status');
+            const result = data.landed ? 'LANDED!' : 'CRASHED!';
+            const score = data.score || 0;
+            const scoreText = data.landed ? `Score: ${score}` : '';
+            const stats = `Time: ${data.time.toFixed(1)}s | Fuel: ${data.fuel_remaining.toFixed(0)} | Inputs: ${data.inputs}`;
+            statusEl.innerHTML = `
+                <div style="font-size: 24px;">${result}</div>
+                ${scoreText ? `<div style="font-size: 20px; margin: 10px 0;">${scoreText}</div>` : ''}
+                <div>${stats}</div>
+                <div>Press R to restart | ESC for menu</div>
+            `;
+            statusEl.style.color = data.landed ? '#0f0' : '#f00';
+            statusEl.style.borderColor = data.landed ? '#0f0' : '#f00';
+            statusEl.classList.remove('hidden');
+            statusEl.classList.add('visible');
         };
         
         await wsClient.joinRoom(roomId, playerName.trim());
+        
+        // Store wsClient globally for game loop access
+        window.wsClient = wsClient;
         
         // Transition to game screen
         document.getElementById('lobby').style.display = 'none';
@@ -77,6 +120,11 @@ async function joinRoom(roomId) {
         document.getElementById('app').style.display = 'block';
         document.getElementById('app').classList.remove('hidden');
         document.getElementById('modeIndicator').textContent = 'MULTIPLAYER';
+        
+        // Set current mode for game loop
+        if (window.setCurrentMode) {
+            window.setCurrentMode('play');
+        }
         
         // Initialize game components
         if (!window.inputHandler && wsClient) {
@@ -99,20 +147,63 @@ async function createRoom(playerName) {
         
         await wsClient.connect();
         
-        // Set up game initialization callback
-        wsClient.onInit = (data) => {
+        // Set up all game callbacks (matching single-player setup)
+        wsClient.onInit = async (data) => {
             console.log('✓ Multiplayer game initialized');
-            // Initialize game UI components
-            if (window.gameState) {
-                window.gameState.terrain = data.terrain;
-                window.gameState.lander = data.lander;
-            }
+            const { stateManager } = await import('./state.js');
+            stateManager.setState({ terrain: data.terrain, lander: data.lander, thrusting: false });
             if (window.inputHandler) {
                 window.inputHandler.wsClient = wsClient;
             }
+            // Start the game loop
+            if (window.startGameLoop) {
+                window.startGameLoop();
+            }
+        };
+        
+        wsClient.onTelemetry = async (data) => {
+            const { stateManager } = await import('./state.js');
+            const stateUpdate = {
+                terrain: data.terrain || stateManager.state.terrain,
+                thrusting: data.thrusting || false,
+                altitude: data.altitude || 0,
+                speed: data.speed || 0,
+                spectatorCount: data.spectator_count
+            };
+            
+            if (data.players) {
+                stateUpdate.players = data.players;
+                stateUpdate.lander = null;
+            } else {
+                stateUpdate.lander = data.lander;
+                stateUpdate.players = null;
+            }
+            
+            stateManager.setState(stateUpdate);
+        };
+        
+        wsClient.onGameOver = (data) => {
+            const statusEl = document.getElementById('status');
+            const result = data.landed ? 'LANDED!' : 'CRASHED!';
+            const score = data.score || 0;
+            const scoreText = data.landed ? `Score: ${score}` : '';
+            const stats = `Time: ${data.time.toFixed(1)}s | Fuel: ${data.fuel_remaining.toFixed(0)} | Inputs: ${data.inputs}`;
+            statusEl.innerHTML = `
+                <div style="font-size: 24px;">${result}</div>
+                ${scoreText ? `<div style="font-size: 20px; margin: 10px 0;">${scoreText}</div>` : ''}
+                <div>${stats}</div>
+                <div>Press R to restart | ESC for menu</div>
+            `;
+            statusEl.style.color = data.landed ? '#0f0' : '#f00';
+            statusEl.style.borderColor = data.landed ? '#0f0' : '#f00';
+            statusEl.classList.remove('hidden');
+            statusEl.classList.add('visible');
         };
         
         await wsClient.createRoom(playerName);
+        
+        // Store wsClient globally for game loop access
+        window.wsClient = wsClient;
         
         // Transition to game screen
         document.getElementById('lobby').style.display = 'none';
@@ -120,6 +211,11 @@ async function createRoom(playerName) {
         document.getElementById('app').style.display = 'block';
         document.getElementById('app').classList.remove('hidden');
         document.getElementById('modeIndicator').textContent = 'MULTIPLAYER';
+        
+        // Set current mode for game loop
+        if (window.setCurrentMode) {
+            window.setCurrentMode('play');
+        }
         
         // Initialize game components
         if (!window.inputHandler && wsClient) {
