@@ -50,7 +50,7 @@ class GameSession:
         
     async def start(self):
         self.running = True
-        self.waiting = False
+        # Don't set waiting = False here - let start_game() do it
         self.start_time = time.time()
         
         # Initialize replay recorder
@@ -71,6 +71,9 @@ class GameSession:
         
         if not self.running:
             return
+        
+        # Game has started - reset start time for accurate timing
+        self.start_time = time.time()
             
         target_fps = 60
         dt = 1.0 / target_fps
@@ -78,6 +81,11 @@ class GameSession:
         
         while self.running:
             loop_start = time.time()
+            
+            # Skip physics simulation while waiting
+            if self.waiting:
+                await asyncio.sleep(0.1)
+                continue
             
             # Update physics for all players
             for player_id, player in self.players.items():
@@ -366,7 +374,7 @@ class GameSession:
         # Send to all spectators
         for spectator_ws in self.spectators[:]:
             try:
-                await spectator_ws.send_text(json.dumps(spectator_ws))
+                await spectator_ws.send_text(json.dumps(message))
             except:
                 self.spectators.remove(spectator_ws)
     
