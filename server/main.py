@@ -281,6 +281,7 @@ async def websocket_endpoint(websocket: WebSocket):
             session.players["default"]["websocket"] = websocket
             
             sessions[session_id] = session
+            session.waiting = False  # Single-player games start immediately
             
             # Send room_id back to client
             await websocket.send_text(json.dumps({
