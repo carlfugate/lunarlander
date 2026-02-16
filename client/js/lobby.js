@@ -57,7 +57,7 @@ async function joinRoom(roomId) {
         await wsClient.connect();
         
         // Set up waiting lobby callbacks
-        wsClient.onInit = async (data) => {
+        wsClient.onRoomJoined = async (data) => {
             console.log('✓ Joined room, showing waiting lobby');
             showWaitingLobby(wsClient, false, roomId, null); // false = not room creator, no custom room name
         };
