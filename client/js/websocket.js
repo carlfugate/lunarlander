@@ -15,6 +15,7 @@ export class WebSocketClient {
         this.onTelemetry = null;
         this.onInit = null;
         this.onGameOver = null;
+        this.onGameStarted = null;
         this.onError = null;
         this.lastPingTime = null;
         this.pingInterval = null;
@@ -130,6 +131,10 @@ export class WebSocketClient {
                 break;
             case 'player_left':
                 console.log('👋 PLAYER LEFT:', data);
+                break;
+            case 'game_started':
+                console.log('🎮 GAME STARTED');
+                if (this.onGameStarted) this.onGameStarted();
                 break;
             case 'error':
                 logger.error('Server error:', data.message);
@@ -269,6 +274,7 @@ export class WebSocketClient {
         this.onTelemetry = null;
         this.onInit = null;
         this.onGameOver = null;
+        this.onGameStarted = null;
         this.onError = null;
     }
 }

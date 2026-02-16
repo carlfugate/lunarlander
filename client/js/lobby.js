@@ -56,83 +56,21 @@ async function joinRoom(roomId) {
         
         await wsClient.connect();
         
-        // Set up all game callbacks (matching single-player setup)
+        // Set up waiting lobby callbacks
         wsClient.onInit = async (data) => {
-            console.log('✓ Multiplayer game initialized');
-            const { stateManager } = await import('./state.js');
-            stateManager.setState({ terrain: data.terrain, lander: data.lander, thrusting: false });
-            if (window.inputHandler) {
-                window.inputHandler.wsClient = wsClient;
-            }
-            // Start the game loop
-            if (window.startGameLoop) {
-                window.startGameLoop();
-            }
+            console.log('✓ Joined room, showing waiting lobby');
+            showWaitingLobby(wsClient, false); // false = not room creator
         };
         
-        wsClient.onTelemetry = async (data) => {
-            const { stateManager } = await import('./state.js');
-            const stateUpdate = {
-                terrain: data.terrain || stateManager.state.terrain,
-                thrusting: data.thrusting || false,
-                altitude: data.altitude || 0,
-                speed: data.speed || 0,
-                spectatorCount: data.spectator_count
-            };
-            
-            if (data.players) {
-                stateUpdate.players = data.players;
-                stateUpdate.lander = null;
-            } else {
-                stateUpdate.lander = data.lander;
-                stateUpdate.players = null;
-            }
-            
-            stateManager.setState(stateUpdate);
-        };
-        
-        wsClient.onGameOver = (data) => {
-            const statusEl = document.getElementById('status');
-            const result = data.landed ? 'LANDED!' : 'CRASHED!';
-            const score = data.score || 0;
-            const scoreText = data.landed ? `Score: ${score}` : '';
-            const stats = `Time: ${data.time.toFixed(1)}s | Fuel: ${data.fuel_remaining.toFixed(0)} | Inputs: ${data.inputs}`;
-            statusEl.innerHTML = `
-                <div style="font-size: 24px;">${result}</div>
-                ${scoreText ? `<div style="font-size: 20px; margin: 10px 0;">${scoreText}</div>` : ''}
-                <div>${stats}</div>
-                <div>Press R to restart | ESC for menu</div>
-            `;
-            statusEl.style.color = data.landed ? '#0f0' : '#f00';
-            statusEl.style.borderColor = data.landed ? '#0f0' : '#f00';
-            statusEl.classList.remove('hidden');
-            statusEl.classList.add('visible');
+        wsClient.onGameStarted = async () => {
+            console.log('✓ Game started by room creator');
+            await startMultiplayerGame(wsClient);
         };
         
         await wsClient.joinRoom(roomId, playerName.trim());
         
-        // Store wsClient globally for game loop access
+        // Store wsClient globally
         window.wsClient = wsClient;
-        
-        // Transition to game screen
-        document.getElementById('lobby').style.display = 'none';
-        document.getElementById('menu').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-        document.getElementById('app').classList.remove('hidden');
-        document.getElementById('modeIndicator').textContent = 'MULTIPLAYER';
-        
-        // Set current mode for game loop
-        if (window.setCurrentMode) {
-            window.setCurrentMode('play');
-        }
-        
-        // Initialize game components
-        if (!window.inputHandler && wsClient) {
-            const { InputHandler } = await import('./input.js');
-            window.inputHandler = new InputHandler(wsClient);
-        }
-        
-        window.dispatchEvent(new Event('resize'));
         
     } catch (error) {
         console.error('Failed to join room:', error);
@@ -147,83 +85,21 @@ async function createRoom(playerName) {
         
         await wsClient.connect();
         
-        // Set up all game callbacks (matching single-player setup)
+        // Set up waiting lobby callbacks
         wsClient.onInit = async (data) => {
-            console.log('✓ Multiplayer game initialized');
-            const { stateManager } = await import('./state.js');
-            stateManager.setState({ terrain: data.terrain, lander: data.lander, thrusting: false });
-            if (window.inputHandler) {
-                window.inputHandler.wsClient = wsClient;
-            }
-            // Start the game loop
-            if (window.startGameLoop) {
-                window.startGameLoop();
-            }
+            console.log('✓ Room created, showing waiting lobby');
+            showWaitingLobby(wsClient, true); // true = is room creator
         };
         
-        wsClient.onTelemetry = async (data) => {
-            const { stateManager } = await import('./state.js');
-            const stateUpdate = {
-                terrain: data.terrain || stateManager.state.terrain,
-                thrusting: data.thrusting || false,
-                altitude: data.altitude || 0,
-                speed: data.speed || 0,
-                spectatorCount: data.spectator_count
-            };
-            
-            if (data.players) {
-                stateUpdate.players = data.players;
-                stateUpdate.lander = null;
-            } else {
-                stateUpdate.lander = data.lander;
-                stateUpdate.players = null;
-            }
-            
-            stateManager.setState(stateUpdate);
-        };
-        
-        wsClient.onGameOver = (data) => {
-            const statusEl = document.getElementById('status');
-            const result = data.landed ? 'LANDED!' : 'CRASHED!';
-            const score = data.score || 0;
-            const scoreText = data.landed ? `Score: ${score}` : '';
-            const stats = `Time: ${data.time.toFixed(1)}s | Fuel: ${data.fuel_remaining.toFixed(0)} | Inputs: ${data.inputs}`;
-            statusEl.innerHTML = `
-                <div style="font-size: 24px;">${result}</div>
-                ${scoreText ? `<div style="font-size: 20px; margin: 10px 0;">${scoreText}</div>` : ''}
-                <div>${stats}</div>
-                <div>Press R to restart | ESC for menu</div>
-            `;
-            statusEl.style.color = data.landed ? '#0f0' : '#f00';
-            statusEl.style.borderColor = data.landed ? '#0f0' : '#f00';
-            statusEl.classList.remove('hidden');
-            statusEl.classList.add('visible');
+        wsClient.onGameStarted = async () => {
+            console.log('✓ Game started by room creator');
+            await startMultiplayerGame(wsClient);
         };
         
         await wsClient.createRoom(playerName);
         
-        // Store wsClient globally for game loop access
+        // Store wsClient globally
         window.wsClient = wsClient;
-        
-        // Transition to game screen
-        document.getElementById('lobby').style.display = 'none';
-        document.getElementById('menu').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-        document.getElementById('app').classList.remove('hidden');
-        document.getElementById('modeIndicator').textContent = 'MULTIPLAYER';
-        
-        // Set current mode for game loop
-        if (window.setCurrentMode) {
-            window.setCurrentMode('play');
-        }
-        
-        // Initialize game components
-        if (!window.inputHandler && wsClient) {
-            const { InputHandler } = await import('./input.js');
-            window.inputHandler = new InputHandler(wsClient);
-        }
-        
-        window.dispatchEvent(new Event('resize'));
         
     } catch (error) {
         console.error('Failed to create room:', error);
@@ -241,9 +117,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (createBtn) {
         createBtn.onclick = () => {
             const roomName = prompt('Enter room name:');
-            if (roomName) {
-                createRoom(roomName);
-            }
+            if (!roomName || !roomName.trim()) return;
+            
+            const playerName = prompt('Enter your player name:');
+            if (!playerName || !playerName.trim()) return;
+            
+            createRoom(playerName.trim());
         };
     }
     
@@ -263,3 +142,136 @@ document.addEventListener('DOMContentLoaded', () => {
         backBtn.onclick = hideLobby;
     }
 });
+
+function showWaitingLobby(wsClient, isCreator) {
+    // Hide lobby and menu
+    document.getElementById('lobby').style.display = 'none';
+    document.getElementById('menu').style.display = 'none';
+    
+    // Create waiting lobby UI
+    let waitingDiv = document.getElementById('waitingLobby');
+    if (!waitingDiv) {
+        waitingDiv = document.createElement('div');
+        waitingDiv.id = 'waitingLobby';
+        waitingDiv.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: monospace;
+            z-index: 1000;
+        `;
+        document.body.appendChild(waitingDiv);
+    }
+    
+    waitingDiv.innerHTML = `
+        <h1 style="color: #0f0; margin-bottom: 30px;">Waiting for Game to Start</h1>
+        <div id="playerList" style="margin-bottom: 30px; text-align: center;">
+            <h3>Players in Room:</h3>
+            <div id="playerNames"></div>
+        </div>
+        ${isCreator ? '<button id="startGameBtn" style="padding: 10px 20px; font-size: 18px; background: #0f0; color: #000; border: none; cursor: pointer;">Start Game</button>' : '<p>Waiting for room creator to start the game...</p>'}
+        <button id="leaveLobbyBtn" style="padding: 10px 20px; font-size: 16px; background: #f00; color: #fff; border: none; cursor: pointer; margin-top: 20px;">Leave Room</button>
+    `;
+    
+    // Add event listeners
+    if (isCreator) {
+        document.getElementById('startGameBtn').onclick = () => {
+            wsClient.send({ type: 'start_game' });
+        };
+    }
+    
+    document.getElementById('leaveLobbyBtn').onclick = () => {
+        wsClient.close();
+        hideWaitingLobby();
+        showLobby();
+    };
+    
+    waitingDiv.style.display = 'flex';
+}
+
+function hideWaitingLobby() {
+    const waitingDiv = document.getElementById('waitingLobby');
+    if (waitingDiv) {
+        waitingDiv.style.display = 'none';
+    }
+}
+
+async function startMultiplayerGame(wsClient) {
+    hideWaitingLobby();
+    
+    // Set up game callbacks
+    wsClient.onTelemetry = async (data) => {
+        const { stateManager } = await import('./state.js');
+        const stateUpdate = {
+            terrain: data.terrain || stateManager.state.terrain,
+            thrusting: data.thrusting || false,
+            altitude: data.altitude || 0,
+            speed: data.speed || 0,
+            spectatorCount: data.spectator_count
+        };
+        
+        if (data.players) {
+            stateUpdate.players = data.players;
+            stateUpdate.lander = null;
+        } else {
+            stateUpdate.lander = data.lander;
+            stateUpdate.players = null;
+        }
+        
+        stateManager.setState(stateUpdate);
+    };
+    
+    wsClient.onGameOver = (data) => {
+        const statusEl = document.getElementById('status');
+        const result = data.landed ? 'LANDED!' : 'CRASHED!';
+        const score = data.score || 0;
+        const scoreText = data.landed ? `Score: ${score}` : '';
+        const stats = `Time: ${data.time.toFixed(1)}s | Fuel: ${data.fuel_remaining.toFixed(0)} | Inputs: ${data.inputs}`;
+        statusEl.innerHTML = `
+            <div style="font-size: 24px;">${result}</div>
+            ${scoreText ? `<div style="font-size: 20px; margin: 10px 0;">${scoreText}</div>` : ''}
+            <div>${stats}</div>
+            <div>Press R to restart | ESC for menu</div>
+        `;
+        statusEl.style.color = data.landed ? '#0f0' : '#f00';
+        statusEl.style.borderColor = data.landed ? '#0f0' : '#f00';
+        statusEl.classList.remove('hidden');
+        statusEl.classList.add('visible');
+    };
+    
+    // Transition to game screen
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('modeIndicator').textContent = 'MULTIPLAYER';
+    
+    // Set current mode for game loop
+    if (window.setCurrentMode) {
+        window.setCurrentMode('play');
+    }
+    
+    // Initialize game components
+    if (!window.inputHandler && wsClient) {
+        const { InputHandler } = await import('./input.js');
+        window.inputHandler = new InputHandler(wsClient);
+        window.inputHandler.wsClient = wsClient;
+    }
+    
+    // Initialize state manager
+    const { stateManager } = await import('./state.js');
+    stateManager.setState({ terrain: null, lander: null, thrusting: false });
+    
+    // Start the game loop
+    if (window.startGameLoop) {
+        window.startGameLoop();
+    }
+    
+    window.dispatchEvent(new Event('resize'));
+}

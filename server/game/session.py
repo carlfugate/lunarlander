@@ -34,6 +34,7 @@ class GameSession:
         
         self.terrain = Terrain(difficulty=difficulty)
         self.running = False
+        self.waiting = True  # New: waiting for game to start
         self.start_time = None
         self.input_count = 0
         self.last_update = time.time()
@@ -49,6 +50,7 @@ class GameSession:
         
     async def start(self):
         self.running = True
+        self.waiting = False
         self.start_time = time.time()
         
         # Initialize replay recorder
@@ -57,8 +59,19 @@ class GameSession:
             self.replay.set_terrain(self.terrain.to_dict())
             
         await self.game_loop()
+    
+    def start_game(self):
+        """Start the game (called by room creator)"""
+        self.waiting = False
         
     async def game_loop(self):
+        # Wait for game to start
+        while self.waiting and self.running:
+            await asyncio.sleep(0.1)
+        
+        if not self.running:
+            return
+            
         target_fps = 60
         dt = 1.0 / target_fps
         frame_count = 0

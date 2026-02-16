@@ -90,13 +90,14 @@ async def list_active_rooms(request: Request):
     for session_id, session in sessions.items():
         player_count = len(session.players)
         if player_count > 0:
+            status = "waiting" if session.waiting else "playing"
             rooms.append({
                 "id": session_id,
                 "name": f"Room {session_id[:8]}",
                 "player_count": player_count,
                 "max_players": 8,
                 "difficulty": session.difficulty,
-                "status": "playing" if session.running else "lobby"
+                "status": status
             })
     return rooms
 
@@ -317,6 +318,17 @@ async def websocket_endpoint(websocket: WebSocket):
                                 session.handle_input(action, "default")
                             else:
                                 print(f"Invalid action from {session_id}: {action}")
+                        elif msg.get("type") == "start_game":
+                            # Only room creator (default player) can start the game
+                            if session.waiting:
+                                session.start_game()
+                                # Broadcast game_started to all players
+                                start_message = {"type": "game_started"}
+                                for pid, player in session.players.items():
+                                    try:
+                                        await player['websocket'].send_text(json.dumps(start_message))
+                                    except:
+                                        pass
                         elif msg.get("type") == "ping":
                             # Respond to ping with pong
                             await websocket.send_text(json.dumps({"type": "pong"}))
@@ -410,6 +422,17 @@ async def websocket_endpoint(websocket: WebSocket):
                                 session.handle_input(action, current_player_id)
                             else:
                                 print(f"Invalid action from {session_id}: {action}")
+                        elif msg.get("type") == "start_game":
+                            # Only room creator (default player) can start the game
+                            if session.waiting and current_player_id == "default":
+                                session.start_game()
+                                # Broadcast game_started to all players
+                                start_message = {"type": "game_started"}
+                                for pid, player in session.players.items():
+                                    try:
+                                        await player['websocket'].send_text(json.dumps(start_message))
+                                    except:
+                                        pass
                         elif msg.get("type") == "ping":
                             # Respond to ping with pong
                             await websocket.send_text(json.dumps({"type": "pong"}))
