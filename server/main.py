@@ -488,6 +488,7 @@ async def websocket_endpoint(websocket: WebSocket):
             
             # Send current player list to all players
             await session.send_player_list()
+            await session.send_initial_state(websocket)
             
             # Only send initial state if game has already started
             if not session.waiting:
