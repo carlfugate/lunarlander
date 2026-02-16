@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const backBtn = document.getElementById('backFromLobby');
     const refreshBtn = document.getElementById('refreshRoomsBtn');
     
-    if (createBtn) {
+    if (createBtn && !createBtn.onclick) {
         createBtn.onclick = () => {
             createRoom();
         };
