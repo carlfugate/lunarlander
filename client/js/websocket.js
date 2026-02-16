@@ -16,6 +16,8 @@ export class WebSocketClient {
         this.onInit = null;
         this.onGameOver = null;
         this.onGameStarted = null;
+        this.onRoomCreated = null;
+        this.onPlayerList = null;
         this.onError = null;
         this.lastPingTime = null;
         this.pingInterval = null;
@@ -125,6 +127,11 @@ export class WebSocketClient {
             case 'room_created':
                 console.log('🏠 ROOM CREATED:', data.room_id);
                 this._displayRoomId(data.room_id);
+                if (this.onRoomCreated) this.onRoomCreated(data);
+                break;
+            case 'player_list':
+                console.log('👥 PLAYER LIST:', data.players);
+                if (this.onPlayerList) this.onPlayerList(data);
                 break;
             case 'player_joined':
                 console.log('👤 PLAYER JOINED:', data);
@@ -275,6 +282,8 @@ export class WebSocketClient {
         this.onInit = null;
         this.onGameOver = null;
         this.onGameStarted = null;
+        this.onRoomCreated = null;
+        this.onPlayerList = null;
         this.onError = null;
     }
 }

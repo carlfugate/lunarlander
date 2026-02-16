@@ -59,7 +59,11 @@ async function joinRoom(roomId) {
         // Set up waiting lobby callbacks
         wsClient.onInit = async (data) => {
             console.log('✓ Joined room, showing waiting lobby');
-            showWaitingLobby(wsClient, false); // false = not room creator
+            showWaitingLobby(wsClient, false, roomId); // false = not room creator
+        };
+        
+        wsClient.onPlayerList = (data) => {
+            updatePlayerList(data.players);
         };
         
         wsClient.onGameStarted = async () => {
@@ -102,10 +106,20 @@ async function createRoom(playerName, roomName) {
         
         await wsClient.connect();
         
+        let roomId = null;
+        
         // Set up waiting lobby callbacks
         wsClient.onInit = async (data) => {
             console.log('✓ Room created, showing waiting lobby');
-            showWaitingLobby(wsClient, true); // true = is room creator
+            showWaitingLobby(wsClient, true, roomId); // true = is room creator
+        };
+        
+        wsClient.onRoomCreated = (data) => {
+            roomId = data.room_id;
+        };
+        
+        wsClient.onPlayerList = (data) => {
+            updatePlayerList(data.players);
         };
         
         wsClient.onGameStarted = async () => {
@@ -210,65 +224,61 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function showWaitingLobby(wsClient, isCreator) {
+function showWaitingLobby(wsClient, isCreator, roomId) {
     // Hide lobby and menu
-    document.getElementById('lobby').style.display = 'none';
-    document.getElementById('menu').style.display = 'none';
+    document.getElementById('lobby').classList.add('hidden');
+    document.getElementById('menu').classList.add('hidden');
     
-    // Create waiting lobby UI
-    let waitingDiv = document.getElementById('waitingLobby');
-    if (!waitingDiv) {
-        waitingDiv = document.createElement('div');
-        waitingDiv.id = 'waitingLobby';
-        waitingDiv.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-family: monospace;
-            z-index: 1000;
-        `;
-        document.body.appendChild(waitingDiv);
+    // Show waiting lobby
+    const waitingLobby = document.getElementById('waitingLobby');
+    waitingLobby.classList.remove('hidden');
+    
+    // Update room info
+    document.getElementById('roomName').textContent = `Room: ${roomId ? roomId.substring(0, 8) : 'Loading...'}`;
+    
+    // Show/hide controls based on creator status
+    const startBtn = document.getElementById('startGameBtn');
+    const waitingMsg = document.getElementById('waitingMessage');
+    
+    if (isCreator) {
+        startBtn.classList.remove('hidden');
+        waitingMsg.classList.add('hidden');
+    } else {
+        startBtn.classList.add('hidden');
+        waitingMsg.classList.remove('hidden');
     }
-    
-    waitingDiv.innerHTML = `
-        <h1 style="color: #0f0; margin-bottom: 30px;">Waiting for Game to Start</h1>
-        <div id="playerList" style="margin-bottom: 30px; text-align: center;">
-            <h3>Players in Room:</h3>
-            <div id="playerNames"></div>
-        </div>
-        ${isCreator ? '<button id="startGameBtn" style="padding: 10px 20px; font-size: 18px; background: #0f0; color: #000; border: none; cursor: pointer;">Start Game</button>' : '<p>Waiting for room creator to start the game...</p>'}
-        <button id="leaveLobbyBtn" style="padding: 10px 20px; font-size: 16px; background: #f00; color: #fff; border: none; cursor: pointer; margin-top: 20px;">Leave Room</button>
-    `;
     
     // Add event listeners
-    if (isCreator) {
-        document.getElementById('startGameBtn').onclick = () => {
-            wsClient.send({ type: 'start_game' });
-        };
-    }
+    startBtn.onclick = () => {
+        wsClient.send({ type: 'start_game' });
+    };
     
     document.getElementById('leaveLobbyBtn').onclick = () => {
         wsClient.close();
         hideWaitingLobby();
         showLobby();
     };
-    
-    waitingDiv.style.display = 'flex';
 }
 
 function hideWaitingLobby() {
-    const waitingDiv = document.getElementById('waitingLobby');
-    if (waitingDiv) {
-        waitingDiv.style.display = 'none';
+    const waitingLobby = document.getElementById('waitingLobby');
+    if (waitingLobby) {
+        waitingLobby.classList.add('hidden');
     }
+}
+
+function updatePlayerList(players) {
+    const playerNames = document.getElementById('playerNames');
+    if (!playerNames) return;
+    
+    playerNames.innerHTML = '';
+    
+    players.forEach(player => {
+        const playerDiv = document.createElement('div');
+        playerDiv.className = `player-item ${player.is_creator ? 'creator' : ''}`;
+        playerDiv.textContent = player.name;
+        playerNames.appendChild(playerDiv);
+    });
 }
 
 async function startMultiplayerGame(wsClient) {

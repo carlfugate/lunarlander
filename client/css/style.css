@@ -572,3 +572,110 @@ body {
 .modal-btn.primary {
     background: rgba(0, 255, 0, 0.1);
 }
+
+/* Waiting Lobby Styles */
+#waitingLobby {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    color: #0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Courier New', Courier, monospace;
+    z-index: 1000;
+}
+
+.waiting-content {
+    text-align: center;
+    max-width: 600px;
+    padding: 40px;
+    border: 2px solid #0f0;
+    background: rgba(0, 255, 0, 0.05);
+}
+
+.waiting-content h1 {
+    font-size: 36px;
+    margin-bottom: 30px;
+    color: #0f0;
+}
+
+#roomInfo {
+    margin-bottom: 30px;
+    font-size: 18px;
+}
+
+#roomName {
+    color: #0ff;
+    font-weight: bold;
+}
+
+#playerListSection {
+    margin-bottom: 30px;
+}
+
+#playerListSection h3 {
+    font-size: 20px;
+    margin-bottom: 15px;
+    color: #0f0;
+}
+
+#playerNames {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.player-item {
+    padding: 8px 15px;
+    background: rgba(0, 255, 0, 0.1);
+    border: 1px solid #0f0;
+    border-radius: 3px;
+    font-size: 16px;
+}
+
+.player-item.creator {
+    border-color: #ff0;
+    color: #ff0;
+}
+
+.player-item.creator::after {
+    content: " (Creator)";
+    font-size: 12px;
+}
+
+#gameControls {
+    margin-bottom: 30px;
+}
+
+#waitingMessage {
+    font-size: 16px;
+    color: #888;
+    font-style: italic;
+}
+
+.menu-btn.primary {
+    background: #0f0;
+    color: #000;
+    border-color: #0f0;
+}
+
+.menu-btn.primary:hover {
+    background: #0a0;
+    border-color: #0a0;
+}
+
+.menu-btn.danger {
+    background: #000;
+    color: #f00;
+    border-color: #f00;
+}
+
+.menu-btn.danger:hover {
+    background: #f00;
+    color: #000;
+}

@@ -107,6 +107,26 @@
         </div>
         <button id="backFromLobby" class="menu-btn">Back to Menu</button>
     </div>
+    
+    <!-- Waiting Lobby -->
+    <div id="waitingLobby" class="hidden">
+        <div class="waiting-content">
+            <h1>Waiting for Game to Start</h1>
+            <div id="roomInfo">
+                <div id="roomName">Room: Loading...</div>
+            </div>
+            <div id="playerListSection">
+                <h3>Players in Room:</h3>
+                <div id="playerNames"></div>
+            </div>
+            <div id="gameControls">
+                <button id="startGameBtn" class="menu-btn primary hidden">Start Game</button>
+                <div id="waitingMessage" class="hidden">Waiting for room creator to start the game...</div>
+            </div>
+            <button id="leaveLobbyBtn" class="menu-btn danger">Leave Room</button>
+        </div>
+    </div>
+    
     <div id="app" class="hidden">
         <canvas id="gameCanvas" width="1200" height="800"></canvas>
         <div id="modeIndicator"></div>

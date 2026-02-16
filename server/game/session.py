@@ -366,9 +366,33 @@ class GameSession:
         # Send to all spectators
         for spectator_ws in self.spectators[:]:
             try:
-                await spectator_ws.send_text(json.dumps(message))
+                await spectator_ws.send_text(json.dumps(spectator_ws))
             except:
                 self.spectators.remove(spectator_ws)
+    
+    async def send_player_list(self):
+        """Send current player list to all players"""
+        players_list = []
+        for player_id, player in self.players.items():
+            players_list.append({
+                "id": player_id,
+                "name": player['name'],
+                "color": player['color'],
+                "is_creator": player_id == "default"
+            })
+        
+        message = {
+            "type": "player_list",
+            "players": players_list
+        }
+        
+        # Send to all players
+        for player_id, player in list(self.players.items()):
+            try:
+                await player['websocket'].send_text(json.dumps(message))
+            except:
+                # Remove player if websocket is closed
+                self.remove_player(player_id)
         
     def handle_input(self, action, player_id="default"):
         self.input_count += 1
@@ -424,6 +448,11 @@ class GameSession:
             player_name = self.players[player_id]['name']
             del self.players[player_id]
             print(f"[{time.time():.3f}] Player {player_id} ({player_name}) left")
+            
+            # Send updated player list to remaining players
+            if self.players:
+                import asyncio
+                asyncio.create_task(self.send_player_list())
             
             # If removing default player and others exist, promote first remaining player
             if player_id == "default" and self.players:

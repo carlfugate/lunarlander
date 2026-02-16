@@ -288,10 +288,13 @@ async def websocket_endpoint(websocket: WebSocket):
                 "room_id": session_id
             }))
             
+            # Send current player list
+            await session.send_player_list()
+            
             # Send initial state
             await session.send_initial_state()
             
-            # Start game loop in background
+            # Start game loop in background (will wait until game starts)
             game_task = asyncio.create_task(session.start())
             
             # Handle incoming messages in parallel
@@ -383,6 +386,9 @@ async def websocket_endpoint(websocket: WebSocket):
                     await player['websocket'].send_text(json.dumps(join_message))
                 except:
                     pass
+            
+            # Send current player list to all players
+            await session.send_player_list()
             
             # Send initial state to new player
             await session.send_initial_state()
