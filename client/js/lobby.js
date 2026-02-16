@@ -1,4 +1,5 @@
 import { WebSocketClient } from './websocket.js';
+import { Renderer } from './renderer.js';
 import config from './config.js';
 
 export function showLobby() {
@@ -283,6 +284,13 @@ async function startMultiplayerGame(wsClient) {
     console.log('Starting multiplayer game...');
     hideWaitingLobby();
     
+    // Initialize renderer like single-player does
+    const canvas = document.getElementById('gameCanvas');
+    if (!window.renderer) {
+        window.renderer = new Renderer(canvas);
+    }
+    window.renderer.reset();
+    
     let firstTelemetryReceived = false;
     
     // Set up game callbacks
@@ -297,6 +305,12 @@ async function startMultiplayerGame(wsClient) {
         }
         
         const { stateManager } = await import('./state.js');
+        
+        // Initialize terrain on first telemetry if available
+        if (!stateManager.state.terrain && data.terrain) {
+            stateManager.setState({ terrain: data.terrain });
+        }
+        
         const stateUpdate = {
             terrain: data.terrain || stateManager.state.terrain,
             thrusting: data.thrusting || false,
@@ -314,6 +328,11 @@ async function startMultiplayerGame(wsClient) {
         }
         
         stateManager.setState(stateUpdate);
+        
+        // Render the updated state
+        if (window.renderer) {
+            window.renderer.render(stateManager.state, stateUpdate.thrusting);
+        }
     };
     
     console.log('onTelemetry handler set up');
@@ -356,14 +375,6 @@ async function startMultiplayerGame(wsClient) {
     // Initialize state manager
     const { stateManager } = await import('./state.js');
     stateManager.setState({ terrain: null, lander: null, players: null, thrusting: false });
-    
-    // Check if renderer exists and reset it
-    if (window.renderer && window.renderer.reset) {
-        console.log('renderer.reset() called');
-        window.renderer.reset();
-    } else {
-        console.log('renderer.reset() NOT called - renderer not available');
-    }
     
     // Start the game loop
     if (window.startGameLoop) {
