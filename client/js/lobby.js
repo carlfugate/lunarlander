@@ -78,7 +78,13 @@ async function joinRoom(roomId) {
     }
 }
 
-async function createRoom(playerName) {
+async function createRoom() {
+    const playerName = prompt('Enter your name:');
+    if (!playerName) return;
+    
+    const roomName = prompt('Enter room name:');
+    if (!roomName) return;
+    
     try {
         const wsUrl = `${config.WS_PROTOCOL}//${config.WS_HOST}/ws`;
         const wsClient = new WebSocketClient(wsUrl);
@@ -96,7 +102,7 @@ async function createRoom(playerName) {
             await startMultiplayerGame(wsClient);
         };
         
-        await wsClient.createRoom(playerName);
+        await wsClient.createRoom(roomName, playerName);
         
         // Store wsClient globally
         window.wsClient = wsClient;
@@ -116,13 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (createBtn) {
         createBtn.onclick = () => {
-            const roomName = prompt('Enter room name:');
-            if (!roomName || !roomName.trim()) return;
-            
-            const playerName = prompt('Enter your player name:');
-            if (!playerName || !playerName.trim()) return;
-            
-            createRoom(playerName.trim());
+            createRoom();
         };
     }
     
@@ -266,7 +266,7 @@ async function startMultiplayerGame(wsClient) {
     
     // Initialize state manager
     const { stateManager } = await import('./state.js');
-    stateManager.setState({ terrain: null, lander: null, thrusting: false });
+    stateManager.setState({ terrain: null, lander: null, players: null, thrusting: false });
     
     // Start the game loop
     if (window.startGameLoop) {
