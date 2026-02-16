@@ -108,14 +108,10 @@ async function createRoom(playerName, roomName) {
         
         let roomId = null;
         
-        // Set up waiting lobby callbacks
-        wsClient.onInit = async (data) => {
-            console.log('✓ Room created, showing waiting lobby');
-            showWaitingLobby(wsClient, true, roomId, roomName); // Pass roomName
-        };
-        
         wsClient.onRoomCreated = (data) => {
             roomId = data.room_id;
+            console.log('✓ Room created, showing waiting lobby');
+            showWaitingLobby(wsClient, true, roomId, roomName);
         };
         
         wsClient.onPlayerList = (data) => {

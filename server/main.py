@@ -9,6 +9,9 @@ import uuid
 import time
 import asyncio
 from game.session import GameSession
+
+print("🚀 UPDATED SERVER STARTING - DEBUG VERSION")
+
 try:
     from firebase_config import verify_token
     FIREBASE_ENABLED = True
@@ -227,6 +230,8 @@ async def websocket_endpoint(websocket: WebSocket):
         
         message = json.loads(data)
         
+        print(f"DEBUG - Received message type: {message.get('type')}")
+        
         # Validate message structure
         if not isinstance(message, dict) or "type" not in message:
             await websocket.send_text(json.dumps({
@@ -325,7 +330,10 @@ async def websocket_endpoint(websocket: WebSocket):
                         elif msg.get("type") == "start_game":
                             # Only room creator (default player) can start the game
                             if session.waiting:
+                                print(f"DEBUG - Starting game for room {session_id}")
                                 session.start_game()
+                                # Send initial state now that game is starting
+                                await session.send_initial_state()
                                 # Broadcast game_started to all players
                                 start_message = {"type": "game_started"}
                                 for pid, player in session.players.items():
@@ -369,6 +377,8 @@ async def websocket_endpoint(websocket: WebSocket):
             sessions[session_id] = session
             # Keep session.waiting = True for multiplayer rooms
             
+            print(f"DEBUG - Created multiplayer room {session_id}, waiting={session.waiting}")
+            
             # Send room_id back to client
             await websocket.send_text(json.dumps({
                 "type": "room_created",
@@ -378,8 +388,7 @@ async def websocket_endpoint(websocket: WebSocket):
             # Send current player list
             await session.send_player_list()
             
-            # Send initial state
-            await session.send_initial_state()
+            # DO NOT send initial state for multiplayer rooms - only send after start_game
             
             # Start game loop in background (will wait until game starts)
             game_task = asyncio.create_task(session.start())
@@ -411,7 +420,10 @@ async def websocket_endpoint(websocket: WebSocket):
                         elif msg.get("type") == "start_game":
                             # Only room creator (default player) can start the game
                             if session.waiting:
+                                print(f"DEBUG - Starting game for room {session_id}")
                                 session.start_game()
+                                # Send initial state now that game is starting
+                                await session.send_initial_state()
                                 # Broadcast game_started to all players
                                 start_message = {"type": "game_started"}
                                 for pid, player in session.players.items():
@@ -477,8 +489,11 @@ async def websocket_endpoint(websocket: WebSocket):
             # Send current player list to all players
             await session.send_player_list()
             
-            # Send initial state to new player
-            await session.send_initial_state()
+            # Only send initial state if game has already started
+            if not session.waiting:
+                await session.send_initial_state()
+            else:
+                print(f"DEBUG - Player {player_id} joined waiting room {room_id}, not sending initial_state")
             
             # No game loop needed - joining existing session
             game_task = None
@@ -518,7 +533,10 @@ async def websocket_endpoint(websocket: WebSocket):
                         elif msg.get("type") == "start_game":
                             # Only room creator (default player) can start the game
                             if session.waiting and current_player_id == "default":
+                                print(f"DEBUG - Starting game for room {session_id} (from joiner handler)")
                                 session.start_game()
+                                # Send initial state now that game is starting
+                                await session.send_initial_state()
                                 # Broadcast game_started to all players
                                 start_message = {"type": "game_started"}
                                 for pid, player in session.players.items():
