@@ -17,6 +17,7 @@ export class WebSocketClient {
         this.onGameOver = null;
         this.onGameStarted = null;
         this.onRoomCreated = null;
+        this.onRoomJoined = null;
         this.onPlayerList = null;
         this.onError = null;
         this.lastPingTime = null;
@@ -143,6 +144,10 @@ export class WebSocketClient {
                 console.log('🎮 GAME STARTED');
                 if (this.onGameStarted) this.onGameStarted();
                 break;
+            case 'room_joined':
+                console.log('🏠 ROOM JOINED');
+                if (this.onRoomJoined) this.onRoomJoined();
+                break;
             case 'error':
                 logger.error('Server error:', data.message);
                 if (this.onError) this.onError(data);
@@ -205,17 +210,17 @@ export class WebSocketClient {
             player_name: playerName
         });
         
-        // Wait for initialization message from server
+        // Wait for room_joined confirmation from server
         return new Promise((resolve, reject) => {
-            const originalOnInit = this.onInit;
+            const originalOnRoomJoined = this.onRoomJoined;
             const timeout = setTimeout(() => {
                 reject(new Error('Join room timeout'));
             }, 10000); // 10 second timeout
             
-            this.onInit = (data) => {
+            this.onRoomJoined = () => {
                 clearTimeout(timeout);
-                if (originalOnInit) {
-                    originalOnInit(data);
+                if (originalOnRoomJoined) {
+                    originalOnRoomJoined();
                 }
                 resolve();
             };
@@ -283,6 +288,7 @@ export class WebSocketClient {
         this.onGameOver = null;
         this.onGameStarted = null;
         this.onRoomCreated = null;
+        this.onRoomJoined = null;
         this.onPlayerList = null;
         this.onError = null;
     }

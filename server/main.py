@@ -488,13 +488,18 @@ async def websocket_endpoint(websocket: WebSocket):
             
             # Send current player list to all players
             await session.send_player_list()
-            await session.send_initial_state(websocket)
+            
+            # Send room_joined confirmation to joining player
+            await websocket.send_text(json.dumps({
+                'type': 'room_joined',
+                'room_id': room_id
+            }))
             
             # Only send initial state if game has already started
             if not session.waiting:
                 await session.send_initial_state()
             else:
-                print(f"DEBUG - Player {player_id} joined waiting room {room_id}, not sending initial_state")
+                print(f"DEBUG - Player {player_id} joined waiting room {room_id}, sent room_joined confirmation")
             
             # No game loop needed - joining existing session
             game_task = None
