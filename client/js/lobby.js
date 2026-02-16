@@ -2,14 +2,18 @@ import { WebSocketClient } from './websocket.js';
 import config from './config.js';
 
 export function showLobby() {
-    document.getElementById('menu').classList.add('hidden');
+    const menuEl = document.getElementById('menu');
+    menuEl.classList.remove('visible');
+    menuEl.classList.add('hidden');
     document.getElementById('lobby').classList.remove('hidden');
     fetchRooms().then(rooms => renderRoomList(rooms));
 }
 
 export function hideLobby() {
     document.getElementById('lobby').classList.add('hidden');
-    document.getElementById('menu').classList.remove('hidden');
+    const menuEl = document.getElementById('menu');
+    menuEl.classList.remove('hidden');
+    menuEl.classList.add('visible');
 }
 
 export async function fetchRooms() {
