@@ -471,27 +471,42 @@ export class Renderer {
     render(gameState, thrusting) {
         this.clear();
         
+        // Update camera based on first player or single player
+        let cameraTarget = null;
         if (gameState.lander) {
-            this.updateCamera(gameState.lander);
+            cameraTarget = gameState.lander;
+        } else if (gameState.players) {
+            // Use first player for camera in multiplayer
+            const firstPlayer = Object.values(gameState.players)[0];
+            if (firstPlayer && firstPlayer.lander) {
+                cameraTarget = firstPlayer.lander;
+            }
+        }
+        
+        if (cameraTarget) {
+            this.updateCamera(cameraTarget);
         }
         
         this.updateParticles();
         
-        this.drawTerrain(gameState.terrain, gameState.lander);
+        this.drawTerrain(gameState.terrain, cameraTarget);
         this.drawParticles();
         
-        // Debug logging for rendering paths
+        // Render based on mode
         if (gameState.lander) {
-            console.log('Single-player mode');
+            // Single-player mode
             this.drawLander(gameState.lander, thrusting);
             this.drawHUD(gameState.lander, gameState.altitude, gameState.speed, gameState.spectatorCount);
         } else if (gameState.players) {
-            console.log('Multiplayer mode');
+            // Multiplayer mode
             for (const [playerId, player] of Object.entries(gameState.players)) {
                 this.drawLander(player.lander, player.thrusting, player.color, player.name);
             }
-        } else {
-            console.log('No game state');
+            // Draw HUD for first player in multiplayer
+            const firstPlayer = Object.values(gameState.players)[0];
+            if (firstPlayer && firstPlayer.lander) {
+                this.drawHUD(firstPlayer.lander, gameState.altitude, gameState.speed, gameState.spectatorCount);
+            }
         }
     }
 }
