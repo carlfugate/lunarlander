@@ -333,6 +333,204 @@ async def test_room_in_list(url="http://localhost"):
         finally:
             await browser.close()
 
+async def test_input_validation(url="http://localhost"):
+    """Test room creation modal input validation"""
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+        
+        errors = []
+        page.on("pageerror", lambda err: errors.append(str(err)))
+        
+        try:
+            await page.goto(url, wait_until="networkidle")
+            await page.wait_for_selector('#menu', timeout=5000)
+            
+            # Navigate to multiplayer
+            await page.click('#multiplayerBtn')
+            await page.wait_for_selector('#lobby', timeout=5000)
+            
+            # Open create room modal
+            await page.click('#createRoomBtn')
+            await page.wait_for_selector('#createRoomModal', timeout=3000)
+            
+            # Test empty player name - click Create button
+            await page.click('#createRoomConfirm')
+            await page.wait_for_timeout(500)
+            
+            # Modal should still be visible (validation failed)
+            modal_visible = await page.is_visible('#createRoomModal')
+            if not modal_visible:
+                return 1
+            
+            # Fill player name, leave room name empty
+            await page.fill('#playerNameInput', 'TestPlayer')
+            await page.click('#createRoomConfirm')
+            await page.wait_for_timeout(500)
+            
+            # Modal should still be visible
+            modal_visible = await page.is_visible('#createRoomModal')
+            if not modal_visible:
+                return 1
+            
+            # Fill both fields - should work
+            await page.fill('#roomNameInput', 'TestRoom')
+            await page.click('#createRoomConfirm')
+            await page.wait_for_timeout(1000)
+            
+            # Modal should be hidden now
+            modal_visible = await page.is_visible('#createRoomModal')
+            if modal_visible:
+                return 1
+            
+            return 0 if not errors else 1
+        except Exception:
+            return 1
+        finally:
+            await browser.close()
+
+async def test_websocket_connection(url="http://localhost"):
+    """Test WebSocket connection and telemetry"""
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+        
+        console_logs = []
+        page.on("console", lambda msg: console_logs.append(msg.text))
+        
+        errors = []
+        page.on("pageerror", lambda err: errors.append(str(err)))
+        
+        try:
+            await page.goto(url, wait_until="networkidle")
+            await page.wait_for_selector('#menu', timeout=5000)
+            
+            # Click Play Game
+            await page.click('#playBtn')
+            await page.wait_for_selector('#difficultySelect', timeout=5000)
+            
+            # Select Easy difficulty
+            await page.click('button[data-difficulty="simple"]')
+            await page.wait_for_timeout(3000)
+            
+            # Check console logs for WebSocket connection
+            ws_connected = any('WebSocket connected' in log for log in console_logs)
+            if not ws_connected:
+                return 1
+            
+            # Check for telemetry data
+            telemetry_received = any('Telemetry' in log or 'telemetry' in log for log in console_logs)
+            if not telemetry_received:
+                return 1
+            
+            # Check for connection errors
+            connection_errors = any('error' in log.lower() and ('websocket' in log.lower() or 'connection' in log.lower()) for log in console_logs)
+            if connection_errors:
+                return 1
+            
+            return 0 if not errors else 1
+        except Exception:
+            return 1
+        finally:
+            await browser.close()
+
+async def test_game_state_updates(url="http://localhost"):
+    """Test game state updates and HUD values"""
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+        
+        errors = []
+        page.on("pageerror", lambda err: errors.append(str(err)))
+        
+        try:
+            await page.goto(url, wait_until="networkidle")
+            await page.wait_for_selector('#menu', timeout=5000)
+            
+            # Start game
+            await page.click('#playBtn')
+            await page.wait_for_selector('#difficultySelect', timeout=5000)
+            await page.click('button[data-difficulty="simple"]')
+            
+            # Wait for game to start
+            await page.wait_for_selector('#gameCanvas', timeout=5000)
+            await page.wait_for_timeout(1000)
+            
+            # Check initial HUD values by examining canvas context
+            initial_check = await page.evaluate("""
+                () => {
+                    const canvas = document.getElementById('gameCanvas');
+                    if (!canvas) return { error: 'No canvas found' };
+                    
+                    // Look for HUD text in the page or check if game state exists
+                    const hudElements = document.querySelectorAll('*');
+                    let fuelFound = false, altFound = false, speedFound = false;
+                    
+                    // Check if game state is accessible via window object
+                    if (window.stateManager && window.stateManager.state) {
+                        const state = window.stateManager.state;
+                        return {
+                            hasFuel: state.lander && typeof state.lander.fuel === 'number',
+                            hasAltitude: typeof state.altitude === 'number',
+                            hasSpeed: typeof state.speed === 'number',
+                            fuelValue: state.lander ? state.lander.fuel : null
+                        };
+                    }
+                    
+                    return { error: 'Game state not accessible' };
+                }
+            """)
+            
+            if 'error' in initial_check:
+                # Fallback: just check that canvas exists and no errors
+                canvas_exists = await page.query_selector('#gameCanvas')
+                if not canvas_exists:
+                    return 1
+            else:
+                # Verify initial values exist
+                if not (initial_check.get('hasFuel') and initial_check.get('hasAltitude') and initial_check.get('hasSpeed')):
+                    return 1
+                
+                # Check fuel is reasonable (0-1000 range)
+                fuel_value = initial_check.get('fuelValue')
+                if fuel_value is not None and (fuel_value < 0 or fuel_value > 1000):
+                    return 1
+            
+            # Wait 2 seconds for game state changes
+            await page.wait_for_timeout(2000)
+            
+            # Check that values have changed (lander should be falling)
+            final_check = await page.evaluate("""
+                () => {
+                    if (window.stateManager && window.stateManager.state) {
+                        const state = window.stateManager.state;
+                        return {
+                            altitude: state.altitude,
+                            speed: state.speed,
+                            fuel: state.lander ? state.lander.fuel : null,
+                            landerY: state.lander ? state.lander.y : null
+                        };
+                    }
+                    return { error: 'Game state not accessible' };
+                }
+            """)
+            
+            if 'error' not in final_check:
+                # Verify altitude/speed changed (lander falling)
+                if final_check.get('speed', 0) <= 0:
+                    return 1
+                
+                # Verify fuel is still reasonable
+                fuel_value = final_check.get('fuel')
+                if fuel_value is not None and (fuel_value < 0 or fuel_value > 1000):
+                    return 1
+            
+            return 0 if not errors else 1
+        except Exception:
+            return 1
+        finally:
+            await browser.close()
+
 async def main():
     """Run all tests and report summary"""
     url = "http://localhost"
@@ -341,7 +539,10 @@ async def main():
         ("Single Player", test_single_player),
         ("Multiplayer Lobby", test_multiplayer_lobby),
         ("Room Creation Modal", test_room_creation_modal),
-        ("Room in List", test_room_in_list)
+        ("Room in List", test_room_in_list),
+        ("Input Validation", test_input_validation),
+        ("WebSocket Connection", test_websocket_connection),
+        ("Game State Updates", test_game_state_updates)
     ]
     
     results = []
