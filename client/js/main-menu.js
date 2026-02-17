@@ -492,7 +492,7 @@ function spectateGame(sessionId) {
         };
 
         wsClient.onGameOver = (data) => {
-            console.log('🏁 Spectate onGameOver:', data);
+            console.log('Spectate game over:', data.multiplayer ? 'multiplayer' : 'single-player');
             
             if (data.multiplayer && data.players_results) {
                 // Multiplayer format

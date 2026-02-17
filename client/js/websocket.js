@@ -109,17 +109,7 @@ export class WebSocketClient {
                 if (this.onInit) this.onInit(data);
                 break;
             case 'telemetry':
-                console.log('Telemetry data received:', data);
-                if (data.players) {
-                    console.log('Players object found:', data.players);
-                }
-                console.log('onTelemetry callback exists?', !!this.onTelemetry);
-                if (this.onTelemetry) {
-                    console.log('🚀 Calling onTelemetry callback');
-                    this.onTelemetry(data);
-                } else {
-                    console.log('❌ No onTelemetry callback');
-                }
+                if (this.onTelemetry) this.onTelemetry(data);
                 break;
             case 'game_over':
                 if (this.onGameOver) this.onGameOver(data);

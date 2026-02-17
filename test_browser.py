@@ -623,7 +623,10 @@ async def test_multiplayer_game(url="http://localhost", keep_open=False):
                     pass
             
             return 0 if not errors else 1
-        except Exception:
+        except Exception as e:
+            print(f"ERROR in test_multiplayer_game: {e}")
+            import traceback
+            traceback.print_exc()
             return 1
         finally:
             if not keep_open:
