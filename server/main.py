@@ -135,7 +135,6 @@ async def spectate_game(websocket: WebSocket, session_id: str):
         init_message = {
             "type": "init",
             "terrain": session.terrain.to_dict(),
-            "lander": session.lander.to_dict(),
             "spectator_count": len(session.spectators),
             "constants": {
                 "gravity": 1.62,
@@ -148,6 +147,12 @@ async def spectate_game(websocket: WebSocket, session_id: str):
                 "terrain_height": 800
             }
         }
+        
+        # Check if multiplayer game and send appropriate data format
+        if len(session.players) > 1:
+            init_message['players'] = {pid: p['lander'].to_dict() for pid, p in session.players.items()}
+        else:
+            init_message['lander'] = session.lander.to_dict()
         await websocket.send_text(json.dumps(init_message))
         
         # Keep connection alive
