@@ -469,6 +469,7 @@ export class Renderer {
     }
     
     render(gameState, thrusting) {
+        console.log('🎨 Renderer.render() called:', { hasLander: !!gameState.lander, hasPlayers: !!gameState.players, playerCount: gameState.players ? Object.keys(gameState.players).length : 0 });
         this.clear();
         
         // Update camera based on first player or single player
