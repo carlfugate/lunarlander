@@ -52,18 +52,28 @@ A modern browser-based remake of the classic 1979 Atari Lunar Lander arcade game
 **1. Start the server:**
 ```bash
 cd server
-python3 -m venv ../venv
-source ../venv/bin/activate
+source ../venv/bin/activate  # venv is in project root
 pip install -r requirements.txt
-uvicorn main:app --port 8000
+uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-**2. Start nginx (single-port deployment):**
+**2. Build the client (first time or after changes):**
 ```bash
-sudo nginx
+cd client
+npm install
+npm run build
 ```
 
-**3. Open your browser:**
+**3. Start nginx:**
+```bash
+# macOS
+brew services start nginx
+
+# Linux
+sudo systemctl start nginx
+```
+
+**4. Open your browser:**
 ```
 http://localhost
 ```
