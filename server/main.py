@@ -609,7 +609,6 @@ async def websocket_endpoint(websocket: WebSocket):
                             except:
                                 pass
                     break
-            else:
             
             # Only delete session if no players left
             if session_id in sessions and not sessions[session_id].players:
