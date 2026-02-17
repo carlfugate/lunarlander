@@ -21,8 +21,10 @@ export function startSpectate(sessionId, onStart, onGameOver) {
     
     wsClient.onGameOver = (data) => {
         console.log('🏁 SPECTATE onGameOver received:', { multiplayer: data.multiplayer, hasPlayersResults: !!data.players_results, data: data });
+        console.log('Checking condition:', data.multiplayer, '&&', !!data.players_results, '=', data.multiplayer && data.players_results);
         
         if (data.multiplayer && data.players_results) {
+            console.log('✅ Using multiplayer format');
             // Multiplayer format - show all players' results
             let resultsHtml = '<div style="font-size: 24px; margin-bottom: 15px;">GAME OVER</div>';
             resultsHtml += '<div style="font-size: 18px; margin-bottom: 10px;">Results:</div>';
@@ -46,6 +48,7 @@ export function startSpectate(sessionId, onStart, onGameOver) {
             
             onGameOver('', resultsHtml);
         } else {
+            console.log('❌ Using single-player format');
             // Single-player format
             const result = data.landed ? 'LANDED!' : 'CRASHED!';
             const score = data.score || 0;
