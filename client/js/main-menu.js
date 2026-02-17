@@ -469,6 +469,27 @@ function spectateGame(sessionId) {
                 console.log('After update - classes:', statusEl.className);
             }
         );
+        
+        // Set unified telemetry handler for spectate mode
+        wsClient.onTelemetry = (data) => {
+            const stateUpdate = {
+                terrain: data.terrain || stateManager.state.terrain,
+                thrusting: data.thrusting || false,
+                altitude: data.altitude || 0,
+                speed: data.speed || 0,
+                spectatorCount: data.spectator_count
+            };
+            
+            if (data.players) {
+                stateUpdate.players = data.players;
+                stateUpdate.lander = null;
+            } else {
+                stateUpdate.lander = data.lander;
+                stateUpdate.players = null;
+            }
+            
+            stateManager.setState(stateUpdate);
+        };
     }).catch((error) => {
         console.error('Failed to load spectate module:', error);
         isConnecting = false;
