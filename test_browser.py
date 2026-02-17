@@ -531,6 +531,101 @@ async def test_game_state_updates(url="http://localhost"):
         finally:
             await browser.close()
 
+async def test_multiplayer_game(url="http://localhost", keep_open=False):
+    """Test automated multiplayer game with 2 players"""
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=False if keep_open else True)
+        
+        # Create two contexts for two players
+        context1 = await browser.new_context()
+        context2 = await browser.new_context()
+        page1 = await context1.new_page()
+        page2 = await context2.new_page()
+        
+        errors = []
+        page1.on("pageerror", lambda err: errors.append(f"Player1: {err}"))
+        page2.on("pageerror", lambda err: errors.append(f"Player2: {err}"))
+        
+        room_id = None
+        
+        try:
+            # Both players load the page
+            await page1.goto(url, wait_until="networkidle")
+            await page2.goto(url, wait_until="networkidle")
+            await page1.wait_for_selector('#menu', timeout=5000)
+            await page2.wait_for_selector('#menu', timeout=5000)
+            
+            # Player 1: Go to multiplayer and create room
+            await page1.click('#multiplayerBtn')
+            await page1.wait_for_selector('#lobby', timeout=5000)
+            await page1.click('#createRoomBtn')
+            await page1.wait_for_selector('#createRoomModal', timeout=3000)
+            
+            # Fill room details
+            await page1.fill('#playerNameInput', 'Player1')
+            await page1.fill('#roomNameInput', 'Test Room')
+            await page1.click('#createRoomConfirm')
+            
+            # Wait for waiting lobby
+            await page1.wait_for_selector('#waitingLobby', timeout=5000)
+            
+            # Get room ID from URL or page content
+            room_id = await page1.evaluate("""
+                () => {
+                    const roomNameEl = document.querySelector('#roomName');
+                    return roomNameEl ? roomNameEl.textContent : 'unknown';
+                }
+            """)
+            
+            # Player 2: Join the room
+            await page2.click('#multiplayerBtn')
+            await page2.wait_for_selector('#lobby', timeout=5000)
+            
+            # Find and click the room in the list
+            await page2.click('#refreshRoomsBtn')
+            await page2.wait_for_timeout(1000)
+            
+            # Click first available room
+            room_btn = await page2.wait_for_selector('.room-item button', timeout=5000)
+            await room_btn.click()
+            
+            # Wait for both players in waiting lobby
+            await page2.wait_for_selector('#waitingLobby', timeout=5000)
+            await page1.wait_for_timeout(2000)  # Let player list update
+            
+            # Player 1: Start the game
+            start_btn = await page1.wait_for_selector('#startGameBtn', timeout=5000)
+            await start_btn.click()
+            
+            # Wait for game to start
+            await page1.wait_for_timeout(2000)
+            
+            # Verify both contexts show game screen
+            canvas1 = await page1.wait_for_selector('#gameCanvas', timeout=5000)
+            canvas2 = await page2.wait_for_selector('#gameCanvas', timeout=5000)
+            
+            if not canvas1 or not canvas2:
+                return 1
+            
+            # Keep game running for 5 seconds
+            await page1.wait_for_timeout(5000)
+            
+            if keep_open:
+                print(f"Game running with room_id: {room_id}")
+                print("Browsers kept open for testing. Press Ctrl+C to exit.")
+                try:
+                    while True:
+                        await asyncio.sleep(1)
+                except KeyboardInterrupt:
+                    pass
+            
+            return 0 if not errors else 1
+        except Exception:
+            return 1
+        finally:
+            if not keep_open:
+                await browser.close()
+
 async def main():
     """Run all tests and report summary"""
     url = "http://localhost"
@@ -542,7 +637,8 @@ async def main():
         ("Room in List", test_room_in_list),
         ("Input Validation", test_input_validation),
         ("WebSocket Connection", test_websocket_connection),
-        ("Game State Updates", test_game_state_updates)
+        ("Game State Updates", test_game_state_updates),
+        ("Multiplayer Game", test_multiplayer_game)
     ]
     
     results = []
@@ -576,6 +672,8 @@ if __name__ == "__main__":
     
     if action == "all":
         exit_code = asyncio.run(main())
+    elif action == "multiplayer_game":
+        exit_code = asyncio.run(test_multiplayer_game(url, keep_open=True))
     else:
         exit_code = asyncio.run(test_game(url, action))
     
