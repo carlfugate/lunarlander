@@ -673,6 +673,7 @@ function gameLoop(timestamp) {
             // Only render if state changed OR animation is active
             const currentState = JSON.stringify({
                 lander: stateManager.state.lander,
+                players: stateManager.state.players,
                 thrusting: thrusting,
                 altitude: stateManager.state.altitude,
                 speed: stateManager.state.speed
