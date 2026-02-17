@@ -22,6 +22,7 @@ export function startSpectate(sessionId, onStart, onGameOver) {
     
     wsClient.onTelemetry = (data) => {
         console.log('📊 SPECTATE onTelemetry:', data.type, 'players:', !!data.players);
+        console.log('Setting state with players:', data.players ? Object.keys(data.players).length : 0);
         const stateUpdate = {
             terrain: data.terrain || stateManager.state.terrain,
             thrusting: data.thrusting || false,
@@ -39,6 +40,7 @@ export function startSpectate(sessionId, onStart, onGameOver) {
         }
         
         stateManager.setState(stateUpdate);
+        console.log('State after update:', { hasPlayers: !!stateManager.state.players, playerCount: stateManager.state.players ? Object.keys(stateManager.state.players).length : 0 });
     };
     
     wsClient.onGameOver = (data) => {
