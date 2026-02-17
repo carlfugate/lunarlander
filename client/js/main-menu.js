@@ -490,6 +490,44 @@ function spectateGame(sessionId) {
             
             stateManager.setState(stateUpdate);
         };
+
+        wsClient.onGameOver = (data) => {
+            console.log('🏁 Spectate onGameOver:', data);
+            
+            if (data.multiplayer && data.players_results) {
+                // Multiplayer format
+                let resultsHtml = '<div style="font-size: 24px; margin-bottom: 15px;">GAME OVER</div>';
+                resultsHtml += '<div style="font-size: 18px; margin-bottom: 10px;">Results:</div>';
+                
+                const sortedResults = data.players_results.sort((a, b) => b.score - a.score);
+                
+                sortedResults.forEach((player, index) => {
+                    const isWinner = player.status === 'landed' && player.score > 0;
+                    const position = index + 1;
+                    const statusText = player.status === 'landed' ? 'LANDED' : 'CRASHED';
+                    const color = isWinner ? '#0f0' : (player.status === 'landed' ? '#ff0' : '#f00');
+                    
+                    resultsHtml += `
+                        <div style="margin: 8px 0; padding: 5px; border: 1px solid ${color}; color: ${color};">
+                            ${position}. ${player.player_name} - ${statusText}
+                            <br>Score: ${player.score} | Fuel: ${player.fuel_remaining.toFixed(0)} | Time: ${player.time.toFixed(1)}s
+                        </div>
+                    `;
+                });
+                
+                statusEl.classList.remove('hidden');
+                statusEl.innerHTML = resultsHtml + '<div>Press ESC for menu</div>';
+                statusEl.classList.add('visible');
+            } else {
+                // Single-player format
+                const result = data.landed ? 'LANDED!' : 'CRASHED!';
+                const score = data.score || 0;
+                const scoreText = data.landed ? `<div style="font-size: 20px; margin: 10px 0;">Score: ${score}</div>` : '';
+                statusEl.classList.remove('hidden');
+                statusEl.innerHTML = `<div style="font-size: 24px;">${result}</div>${scoreText}<div>Press ESC for menu</div>`;
+                statusEl.classList.add('visible');
+            }
+        };
     }).catch((error) => {
         console.error('Failed to load spectate module:', error);
         isConnecting = false;
