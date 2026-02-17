@@ -2,6 +2,7 @@
  * @typedef {Object} GameState
  * @property {Array<{x: number, y: number}>|null} terrain
  * @property {Object|null} lander
+ * @property {Object|null} players
  * @property {boolean} thrusting
  * @property {number} altitude
  * @property {number} speed
@@ -17,6 +18,7 @@ class StateManager {
         this.state = {
             terrain: null,
             lander: null,
+            players: null,
             thrusting: false,
             altitude: 0,
             speed: 0,
@@ -69,6 +71,7 @@ class StateManager {
         this.setState({
             terrain: null,
             lander: null,
+            players: null,
             thrusting: false,
             altitude: 0,
             speed: 0,

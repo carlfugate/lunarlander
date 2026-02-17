@@ -22,9 +22,21 @@ A modern browser-based remake of the classic 1979 Atari Lunar Lander arcade game
 - **Maximum Score**: 3,600 points (perfect landing on Hard)
 
 ### Game Modes
-- **🎮 Play**: Control the lander with keyboard or touch
+- **🎮 Play**: Single-player mode with three difficulty levels
+- **👥 Multiplayer**: Create or join rooms to play with friends
 - **👁️ Spectate**: Watch live games in real-time
 - **📹 Replay**: Watch recorded games
+
+### Multiplayer Features
+- **Room Creation**: Create custom-named rooms for friends
+- **Waiting Lobby**: See all players before starting
+- **Creator Control**: Room creator starts the game
+- **Colored Landers**: Each player has a unique color
+- **Player Names**: Names displayed above landers
+- **Individual Tracking**: Separate scores, fuel, and finish times
+- **Game Continues**: Play until ALL players finish
+- **Ranked Results**: Final leaderboard with all players
+- **Spectate Support**: Watch multiplayer games live
 
 ### Mobile Support
 - **Touch Controls**: Optimized for mobile devices
@@ -52,18 +64,28 @@ A modern browser-based remake of the classic 1979 Atari Lunar Lander arcade game
 **1. Start the server:**
 ```bash
 cd server
-python3 -m venv ../venv
-source ../venv/bin/activate
+source ../venv/bin/activate  # venv is in project root
 pip install -r requirements.txt
-uvicorn main:app --port 8000
+uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-**2. Start nginx (single-port deployment):**
+**2. Build the client (first time or after changes):**
 ```bash
-sudo nginx
+cd client
+npm install
+npm run build
 ```
 
-**3. Open your browser:**
+**3. Start nginx:**
+```bash
+# macOS
+brew services start nginx
+
+# Linux
+sudo systemctl start nginx
+```
+
+**4. Open your browser:**
 ```
 http://localhost
 ```
@@ -83,9 +105,14 @@ Access via the ngrok URL - game works identically!
 **Desktop:**
 - **↑ Arrow Up**: Thrust (main engine)
 - **← → Arrow Left/Right**: Rotate lander
-- **P**: Pause/Resume
-- **R**: Restart after game over
+- **P**: Pause/Resume (single-player only)
+- **R**: Restart after game over (single-player only)
 - **ESC**: Return to menu
+
+**Multiplayer Notes:**
+- No pause or restart in multiplayer
+- Game continues until all players finish
+- ESC returns to menu after game over
 
 **Mobile (< 768px):**
 - **▲ Button**: Thrust (hold to thrust)

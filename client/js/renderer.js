@@ -6,8 +6,9 @@ export class Renderer {
         this.height = canvas.height;
         this.camera = { x: 0, y: 0 };
         this.particles = [];
-        this.explosion = null;
-        this.hasExploded = false;
+        this.explosions = new Map(); // Track explosions per lander (key: lander object or ID)
+        this.hasExploded = false; // For single-player backward compatibility
+        this.explodedLanders = new Set(); // Track which landers have already exploded
         
         // Starfield
         this.stars = this.generateStars(200);
@@ -43,6 +44,28 @@ export class Renderer {
         
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
+    }
+    
+    lightenColor(color, percent) {
+        const num = parseInt(color.replace('#', ''), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = (num >> 16) + amt;
+        const G = (num >> 8 & 0x00FF) + amt;
+        const B = (num & 0x0000FF) + amt;
+        return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+            (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+            (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+    }
+    
+    darkenColor(color, percent) {
+        const num = parseInt(color.replace('#', ''), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = (num >> 16) - amt;
+        const G = (num >> 8 & 0x00FF) - amt;
+        const B = (num & 0x0000FF) - amt;
+        return '#' + (0x1000000 + (R > 255 ? 255 : R < 0 ? 0 : R) * 0x10000 +
+            (G > 255 ? 255 : G < 0 ? 0 : G) * 0x100 +
+            (B > 255 ? 255 : B < 0 ? 0 : B)).toString(16).slice(1);
     }
     
     clear() {
@@ -124,18 +147,22 @@ export class Renderer {
         }
     }
     
-    drawLander(lander, thrusting) {
+    drawLander(lander, thrusting, playerColor = '#888', playerName = '') {
         if (!lander) return;
         
-        // Trigger explosion on crash (only once per game)
-        if (lander.crashed && !this.hasExploded) {
-            this.hasExploded = true;
-            this.explosion = {
+        // Use player name or color as unique key (stable across frames)
+        const landerKey = playerName || playerColor;
+        
+        // Trigger explosion on crash (only once per lander, ever)
+        if (lander.crashed && !this.explodedLanders.has(landerKey)) {
+            this.explodedLanders.add(landerKey);
+            const explosion = {
                 x: lander.x,
                 y: lander.y,
                 time: 0,
                 duration: 1.5
             };
+            this.explosions.set(landerKey, explosion);
             
             // Create explosion particles
             for (let i = 0; i < 50; i++) {
@@ -153,11 +180,21 @@ export class Renderer {
             }
         }
         
-        // Don't draw lander if exploding
-        if (this.explosion && this.explosion.time < 0.5) return;
+        // Don't draw this lander if it's exploding
+        const explosion = this.explosions.get(landerKey);
+        if (explosion && explosion.time < 0.5) return;
         
         const x = lander.x - this.camera.x;
         const y = lander.y - this.camera.y;
+        
+        // Draw player name above lander
+        if (playerName) {
+            this.ctx.font = 'bold 14px monospace';
+            this.ctx.fillStyle = playerColor;
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(playerName, x, y - 45);
+            this.ctx.textAlign = 'left';
+        }
         
         // Emit particles when thrusting (opposite of thrust direction)
         if (thrusting && lander.fuel > 0 && !lander.crashed && !lander.landed) {
@@ -187,11 +224,11 @@ export class Renderer {
         const landed = lander.landed;
         
         // Main body (rectangular)
-        this.ctx.fillStyle = crashed ? '#f00' : '#888';
+        this.ctx.fillStyle = crashed ? '#f00' : playerColor;
         this.ctx.fillRect(-12, -25, 24, 20);
         
         // Top section (command module)
-        this.ctx.fillStyle = crashed ? '#f00' : '#aaa';
+        this.ctx.fillStyle = crashed ? '#f00' : this.lightenColor(playerColor, 20);
         this.ctx.fillRect(-8, -30, 16, 5);
         
         // Windows
@@ -200,7 +237,7 @@ export class Renderer {
         this.ctx.fillRect(2, -28, 4, 2);
         
         // Landing legs (4 legs)
-        this.ctx.strokeStyle = crashed ? '#f00' : '#666';
+        this.ctx.strokeStyle = crashed ? '#f00' : this.darkenColor(playerColor, 30);
         this.ctx.lineWidth = 2;
         
         // Left legs
@@ -247,11 +284,11 @@ export class Renderer {
     }
     
     updateParticles(dt = 1/60) {
-        // Update explosion timer
-        if (this.explosion) {
-            this.explosion.time += dt;
-            if (this.explosion.time > this.explosion.duration) {
-                this.explosion = null;
+        // Update all explosion timers
+        for (const [key, explosion] of this.explosions.entries()) {
+            explosion.time += dt;
+            if (explosion.time > explosion.duration) {
+                this.explosions.delete(key);
             }
         }
         
@@ -440,15 +477,42 @@ export class Renderer {
     render(gameState, thrusting) {
         this.clear();
         
+        // Update camera based on first player or single player
+        let cameraTarget = null;
         if (gameState.lander) {
-            this.updateCamera(gameState.lander);
+            cameraTarget = gameState.lander;
+        } else if (gameState.players) {
+            // Use first player for camera in multiplayer
+            const firstPlayer = Object.values(gameState.players)[0];
+            if (firstPlayer && firstPlayer.lander) {
+                cameraTarget = firstPlayer.lander;
+            }
+        }
+        
+        if (cameraTarget) {
+            this.updateCamera(cameraTarget);
         }
         
         this.updateParticles();
         
-        this.drawTerrain(gameState.terrain, gameState.lander);
+        this.drawTerrain(gameState.terrain, cameraTarget);
         this.drawParticles();
-        this.drawLander(gameState.lander, thrusting);
-        this.drawHUD(gameState.lander, gameState.altitude, gameState.speed, gameState.spectatorCount);
+        
+        // Render based on mode
+        if (gameState.lander) {
+            // Single-player mode
+            this.drawLander(gameState.lander, thrusting);
+            this.drawHUD(gameState.lander, gameState.altitude, gameState.speed, gameState.spectatorCount);
+        } else if (gameState.players) {
+            // Multiplayer mode
+            for (const [playerId, player] of Object.entries(gameState.players)) {
+                this.drawLander(player.lander, player.thrusting, player.color, player.name);
+            }
+            // Draw HUD for first player in multiplayer
+            const firstPlayer = Object.values(gameState.players)[0];
+            if (firstPlayer && firstPlayer.lander) {
+                this.drawHUD(firstPlayer.lander, gameState.altitude, gameState.speed, gameState.spectatorCount);
+            }
+        }
     }
 }

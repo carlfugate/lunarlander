@@ -52,6 +52,7 @@ import { logger } from './logger.js';
 import { stateManager } from './state.js';
 import { perfMonitor } from './performance.js';
 import config from './config.js';
+import * as lobby from './lobby.js';
 
 const canvas = document.getElementById('gameCanvas');
 const renderer = new Renderer(canvas);
@@ -61,6 +62,138 @@ const menuEl = document.getElementById('menu');
 
 // Make perfMonitor globally available for WebSocket
 window.perfMonitor = perfMonitor;
+window.renderer = renderer;
+window.stateManager = stateManager;
+
+// Global helper function for joining rooms from console
+window.joinRoom = async function(roomId, playerName = 'Player2') {
+    try {
+        stopGameLoop();
+        renderer.reset();
+        statusEl.textContent = 'Connecting...';
+        statusEl.classList.add('visible');
+        
+        const wsUrl = `${config.WS_PROTOCOL}//${config.WS_HOST}/ws`;
+        wsClient = new WebSocketClient(wsUrl);
+        
+        wsClient.onInit = (data) => {
+            console.log('Received init message:', data);
+            stateManager.setState({ terrain: data.terrain, lander: data.lander, thrusting: false });
+            gameActive = true;
+            statusEl.classList.remove('visible');
+            startGameLoop();
+            isConnecting = false;
+            console.log('Game loop started, gameState:', gameState);
+        };
+        
+        wsClient.onTelemetry = (data) => {
+            const stateUpdate = {
+                terrain: data.terrain || stateManager.state.terrain,
+                thrusting: data.thrusting || false,
+                altitude: data.altitude || 0,
+                speed: data.speed || 0,
+                spectatorCount: data.spectator_count
+            };
+            
+            if (data.players) {
+                stateUpdate.players = data.players;
+                stateUpdate.lander = null;
+            } else {
+                stateUpdate.lander = data.lander;
+                stateUpdate.players = null;
+            }
+            
+            stateManager.setState(stateUpdate);
+            devTools.update(gameState);
+        };
+        
+        wsClient.onGameOver = (data) => {
+            gameActive = false;
+            
+            if (data.multiplayer && data.players_results) {
+                // Multiplayer format - show all players' results
+                let resultsHtml = '<div style="font-size: 24px; margin-bottom: 15px;">GAME OVER</div>';
+                resultsHtml += '<div style="font-size: 18px; margin-bottom: 10px;">Results:</div>';
+                
+                // Sort players by score (winners first)
+                const sortedResults = data.players_results.sort((a, b) => b.score - a.score);
+                
+                sortedResults.forEach((player, index) => {
+                    const isWinner = player.status === 'landed' && player.score > 0;
+                    const position = index + 1;
+                    const statusText = player.status === 'landed' ? 'LANDED' : 'CRASHED';
+                    const color = isWinner ? '#0f0' : (player.status === 'landed' ? '#ff0' : '#f00');
+                    
+                    resultsHtml += `
+                        <div style="margin: 8px 0; padding: 5px; border: 1px solid ${color}; color: ${color};">
+                            ${position}. ${player.player_name} - ${statusText}
+                            <br>Score: ${player.score} | Fuel: ${player.fuel_remaining.toFixed(0)} | Time: ${player.time.toFixed(1)}s
+                        </div>
+                    `;
+                });
+                
+                resultsHtml += '<div style="margin-top: 15px;">Press ESC to return to menu</div>';
+                statusEl.innerHTML = resultsHtml;
+                statusEl.style.color = '#fff';
+                statusEl.style.borderColor = '#fff';
+            } else {
+                // Single-player format (backward compatible)
+                const result = data.landed ? 'LANDED!' : 'CRASHED!';
+                const score = data.score || 0;
+                const scoreText = data.landed ? `Score: ${score}` : '';
+                const stats = `Time: ${data.time.toFixed(1)}s | Fuel: ${data.fuel_remaining.toFixed(0)} | Inputs: ${data.inputs}`;
+                statusEl.innerHTML = `
+                    <div style="font-size: 24px;">${result}</div>
+                    ${scoreText ? `<div style="font-size: 20px; margin: 10px 0;">${scoreText}</div>` : ''}
+                    <div>${stats}</div>
+                    <div>Press R to restart | ESC for menu</div>
+                `;
+                statusEl.style.color = data.landed ? '#0f0' : '#f00';
+                statusEl.style.borderColor = data.landed ? '#0f0' : '#f00';
+            }
+            
+            statusEl.classList.remove('hidden');
+            statusEl.classList.add('visible');
+        };
+        
+        // Hide lobby and menu, show game
+        document.getElementById('lobby').style.display = 'none';
+        menuEl.classList.add('hidden');
+        appEl.classList.remove('hidden');
+        appEl.style.display = 'block';
+        menuEl.style.display = 'none';
+        currentMode = 'play';
+        modeIndicatorEl.textContent = 'PLAYING';
+        window.dispatchEvent(new Event('resize'));
+        
+        await wsClient.connect();
+        await wsClient.joinRoom(roomId, playerName);
+        inputHandler = new InputHandler(wsClient, () => isPaused);
+        
+        const isMobile = window.innerWidth <= 768 || 
+                        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        devTools.setStatus('devWsStatus', 'Connected', 'ok');
+        devTools.setText('devMobile', isMobile ? 'Yes' : 'No');
+        devTools.setText('devDebugMode', localStorage.getItem('debug') === 'true' ? 'On' : 'Off');
+        
+        if (isMobile) {
+            try {
+                mobileControls = new MobileControls(wsClient);
+                mobileControls.show();
+                logger.info('Mobile controls initialized and shown');
+            } catch (error) {
+                console.error('Error initializing mobile controls:', error);
+            }
+        }
+        
+        console.log(`Joined room ${roomId} as ${playerName}`);
+    } catch (error) {
+        console.error('Failed to join room:', error);
+        statusEl.textContent = 'Failed to connect';
+        statusEl.classList.add('visible');
+    }
+};
 const appEl = document.getElementById('app');
 const modeIndicatorEl = document.getElementById('modeIndicator');
 
@@ -80,6 +213,10 @@ document.getElementById('playBtn').addEventListener('click', () => {
     console.log('Play button clicked');
     document.querySelector('.menu-buttons').classList.add('hidden');
     document.getElementById('difficultySelect').classList.remove('hidden');
+});
+
+document.getElementById('multiplayerBtn').addEventListener('click', () => {
+    lobby.showLobby();
 });
 
 // Difficulty selection
@@ -162,30 +299,72 @@ async function loadActiveGames() {
             return;
         }
         
-        listEl.innerHTML = '';
-        data.games.forEach(game => {
-            const gameItem = document.createElement('button');
-            gameItem.className = 'game-item';
-            gameItem.dataset.sessionId = game.session_id;
-            gameItem.setAttribute('role', 'button');
-            gameItem.setAttribute('aria-label', `Spectate ${game.user_id}'s game`);
-            
-            const playerDiv = document.createElement('div');
-            playerDiv.textContent = `Player: ${game.user_id}`;
-            
-            const difficultyDiv = document.createElement('div');
-            difficultyDiv.textContent = `Difficulty: ${game.difficulty}`;
-            
-            const statsDiv = document.createElement('div');
-            statsDiv.textContent = `Duration: ${game.duration.toFixed(0)}s | Spectators: ${game.spectators}`;
-            
-            gameItem.appendChild(playerDiv);
-            gameItem.appendChild(difficultyDiv);
-            gameItem.appendChild(statsDiv);
-            gameItem.addEventListener('click', () => spectateGame(game.session_id));
-            
-            listEl.appendChild(gameItem);
-        });
+        // Split games into single-player and multiplayer
+        const singlePlayerGames = data.games.filter(game => !game.is_multiplayer);
+        const multiplayerGames = data.games.filter(game => game.is_multiplayer);
+        
+        // Create two-column layout
+        listEl.innerHTML = `
+            <div style="display: flex; gap: 20px; align-items: flex-start;">
+                <div style="flex: 1;">
+                    <h3 style="color: #0f0; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #0f0; padding-bottom: 5px;">Single Player Games</h3>
+                    <div id="singlePlayerList"></div>
+                </div>
+                <div style="flex: 1;">
+                    <h3 style="color: #0f0; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #0f0; padding-bottom: 5px;">Multiplayer Games</h3>
+                    <div id="multiplayerList"></div>
+                </div>
+            </div>
+        `;
+        
+        const singlePlayerList = document.getElementById('singlePlayerList');
+        const multiplayerList = document.getElementById('multiplayerList');
+        
+        // Populate single-player games
+        if (singlePlayerGames.length === 0) {
+            singlePlayerList.innerHTML = '<p style="color: #888; text-align: center; padding: 20px;">No single-player games</p>';
+        } else {
+            singlePlayerGames.forEach(game => {
+                const gameItem = document.createElement('button');
+                gameItem.className = 'game-item';
+                gameItem.dataset.sessionId = game.session_id;
+                gameItem.setAttribute('role', 'button');
+                gameItem.setAttribute('aria-label', `Spectate ${game.user_id}'s game`);
+                
+                gameItem.innerHTML = `
+                    <div>Session: ${game.session_id.substring(0, 8)}...</div>
+                    <div>Player: ${game.user_id}</div>
+                    <div>Difficulty: ${game.difficulty}</div>
+                    <div>Duration: ${game.duration.toFixed(0)}s | Spectators: ${game.spectators}</div>
+                `;
+                
+                gameItem.addEventListener('click', () => spectateGame(game.session_id));
+                singlePlayerList.appendChild(gameItem);
+            });
+        }
+        
+        // Populate multiplayer games
+        if (multiplayerGames.length === 0) {
+            multiplayerList.innerHTML = '<p style="color: #888; text-align: center; padding: 20px;">No multiplayer games</p>';
+        } else {
+            multiplayerGames.forEach(game => {
+                const gameItem = document.createElement('button');
+                gameItem.className = 'game-item';
+                gameItem.dataset.sessionId = game.session_id;
+                gameItem.setAttribute('role', 'button');
+                gameItem.setAttribute('aria-label', `Spectate multiplayer game with ${game.player_count} players`);
+                
+                gameItem.innerHTML = `
+                    <div>Session: ${game.session_id.substring(0, 8)}...</div>
+                    <div>Players: ${game.player_count}</div>
+                    <div>Difficulty: ${game.difficulty}</div>
+                    <div>Duration: ${game.duration.toFixed(0)}s | Spectators: ${game.spectators}</div>
+                `;
+                
+                gameItem.addEventListener('click', () => spectateGame(game.session_id));
+                multiplayerList.appendChild(gameItem);
+            });
+        }
     } catch (error) {
         console.error('Failed to load games:', error);
         listEl.innerHTML = '<p style="color: #f00;">Failed to load games. Please try again.</p>';
@@ -286,6 +465,65 @@ function spectateGame(sessionId) {
                 console.log('After update - classes:', statusEl.className);
             }
         );
+        
+        // Set unified telemetry handler for spectate mode
+        wsClient.onTelemetry = (data) => {
+            const stateUpdate = {
+                terrain: data.terrain || stateManager.state.terrain,
+                thrusting: data.thrusting || false,
+                altitude: data.altitude || 0,
+                speed: data.speed || 0,
+                spectatorCount: data.spectator_count
+            };
+            
+            if (data.players) {
+                stateUpdate.players = data.players;
+                stateUpdate.lander = null;
+            } else {
+                stateUpdate.lander = data.lander;
+                stateUpdate.players = null;
+            }
+            
+            stateManager.setState(stateUpdate);
+        };
+
+        wsClient.onGameOver = (data) => {
+            console.log('Spectate game over:', data.multiplayer ? 'multiplayer' : 'single-player');
+            
+            if (data.multiplayer && data.players_results) {
+                // Multiplayer format
+                let resultsHtml = '<div style="font-size: 24px; margin-bottom: 15px;">GAME OVER</div>';
+                resultsHtml += '<div style="font-size: 18px; margin-bottom: 10px;">Results:</div>';
+                
+                const sortedResults = data.players_results.sort((a, b) => b.score - a.score);
+                
+                sortedResults.forEach((player, index) => {
+                    const isWinner = player.status === 'landed' && player.score > 0;
+                    const position = index + 1;
+                    const statusText = player.status === 'landed' ? 'LANDED' : 'CRASHED';
+                    const color = isWinner ? '#0f0' : (player.status === 'landed' ? '#ff0' : '#f00');
+                    
+                    resultsHtml += `
+                        <div style="margin: 8px 0; padding: 5px; border: 1px solid ${color}; color: ${color};">
+                            ${position}. ${player.player_name} - ${statusText}
+                            <br>Score: ${player.score} | Fuel: ${player.fuel_remaining.toFixed(0)} | Time: ${player.time.toFixed(1)}s
+                        </div>
+                    `;
+                });
+                
+                statusEl.classList.remove('hidden');
+                statusEl.innerHTML = resultsHtml + '<div>Press ESC for menu</div>';
+                statusEl.classList.add('visible');
+            } else {
+                // Single-player format
+                const result = data.landed ? 'LANDED!' : 'CRASHED!';
+                const score = data.score || 0;
+                const scoreText = data.landed ? `<div style="font-size: 20px; margin: 10px 0;">Score: ${score}</div>` : '';
+                statusEl.classList.remove('hidden');
+                statusEl.innerHTML = `<div style="font-size: 24px;">${result}</div>${scoreText}<div>Press ESC for menu</div>`;
+                statusEl.classList.add('visible');
+            }
+        };
     }).catch((error) => {
         console.error('Failed to load spectate module:', error);
         isConnecting = false;
@@ -364,30 +602,74 @@ async function startGame(difficulty = 'simple') {
         };
         
         wsClient.onTelemetry = (data) => {
-            stateManager.setState({
-                lander: data.lander,
+            const stateUpdate = {
+                terrain: data.terrain || stateManager.state.terrain,
                 thrusting: data.thrusting || false,
                 altitude: data.altitude || 0,
                 speed: data.speed || 0,
                 spectatorCount: data.spectator_count
-            });
+            };
+            
+            // Multiplayer mode
+            if (data.players) {
+                stateUpdate.players = data.players;
+                stateUpdate.lander = null;
+            } 
+            // Single player mode
+            else {
+                stateUpdate.lander = data.lander;
+                stateUpdate.players = null;
+            }
+            
+            stateManager.setState(stateUpdate);
             devTools.update(gameState);
         };
         
         wsClient.onGameOver = (data) => {
             gameActive = false;
-            const result = data.landed ? 'LANDED!' : 'CRASHED!';
-            const score = data.score || 0;
-            const scoreText = data.landed ? `Score: ${score}` : '';
-            const stats = `Time: ${data.time.toFixed(1)}s | Fuel: ${data.fuel_remaining.toFixed(0)} | Inputs: ${data.inputs}`;
-            statusEl.innerHTML = `
-                <div style="font-size: 24px;">${result}</div>
-                ${scoreText ? `<div style="font-size: 20px; margin: 10px 0;">${scoreText}</div>` : ''}
-                <div>${stats}</div>
-                <div>Press R to restart | ESC for menu</div>
-            `;
-            statusEl.style.color = data.landed ? '#0f0' : '#f00';
-            statusEl.style.borderColor = data.landed ? '#0f0' : '#f00';
+            
+            if (data.multiplayer && data.players_results) {
+                // Multiplayer format - show all players' results
+                let resultsHtml = '<div style="font-size: 24px; margin-bottom: 15px;">GAME OVER</div>';
+                resultsHtml += '<div style="font-size: 18px; margin-bottom: 10px;">Results:</div>';
+                
+                // Sort players by score (winners first)
+                const sortedResults = data.players_results.sort((a, b) => b.score - a.score);
+                
+                sortedResults.forEach((player, index) => {
+                    const isWinner = player.status === 'landed' && player.score > 0;
+                    const position = index + 1;
+                    const statusText = player.status === 'landed' ? 'LANDED' : 'CRASHED';
+                    const color = isWinner ? '#0f0' : (player.status === 'landed' ? '#ff0' : '#f00');
+                    
+                    resultsHtml += `
+                        <div style="margin: 8px 0; padding: 5px; border: 1px solid ${color}; color: ${color};">
+                            ${position}. ${player.player_name} - ${statusText}
+                            <br>Score: ${player.score} | Fuel: ${player.fuel_remaining.toFixed(0)} | Time: ${player.time.toFixed(1)}s
+                        </div>
+                    `;
+                });
+                
+                resultsHtml += '<div style="margin-top: 15px;">Press ESC to return to menu</div>';
+                statusEl.innerHTML = resultsHtml;
+                statusEl.style.color = '#fff';
+                statusEl.style.borderColor = '#fff';
+            } else {
+                // Single-player format (backward compatible)
+                const result = data.landed ? 'LANDED!' : 'CRASHED!';
+                const score = data.score || 0;
+                const scoreText = data.landed ? `Score: ${score}` : '';
+                const stats = `Time: ${data.time.toFixed(1)}s | Fuel: ${data.fuel_remaining.toFixed(0)} | Inputs: ${data.inputs}`;
+                statusEl.innerHTML = `
+                    <div style="font-size: 24px;">${result}</div>
+                    ${scoreText ? `<div style="font-size: 20px; margin: 10px 0;">${scoreText}</div>` : ''}
+                    <div>${stats}</div>
+                    <div>Press R to restart | ESC for menu</div>
+                `;
+                statusEl.style.color = data.landed ? '#0f0' : '#f00';
+                statusEl.style.borderColor = data.landed ? '#0f0' : '#f00';
+            }
+            
             statusEl.classList.remove('hidden');
             statusEl.classList.add('visible');
         };
@@ -437,11 +719,12 @@ function gameLoop(timestamp) {
             const thrusting = stateManager.state.thrusting || (inputHandler ? inputHandler.isThrusting() : false);
             
             // Always render if there are particles or explosion (they animate)
-            const hasAnimation = renderer.particles.length > 0 || renderer.explosion;
+            const hasAnimation = renderer.particles.length > 0 || renderer.explosions.size > 0;
             
             // Only render if state changed OR animation is active
             const currentState = JSON.stringify({
                 lander: stateManager.state.lander,
+                players: stateManager.state.players,
                 thrusting: thrusting,
                 altitude: stateManager.state.altitude,
                 speed: stateManager.state.speed
@@ -478,6 +761,11 @@ function startGameLoop() {
     }
 }
 
+// Make functions globally available for multiplayer
+window.startGameLoop = startGameLoop;
+window.stopGameLoop = stopGameLoop;
+window.setCurrentMode = (mode) => { currentMode = mode; };
+
 document.addEventListener('keydown', (e) => {
     // F key - toggle performance monitor
     if (e.key === 'f' || e.key === 'F') {
@@ -497,7 +785,7 @@ document.addEventListener('keydown', (e) => {
         }
     }
     if (e.key === 'r' || e.key === 'R') {
-        if (!gameActive && currentMode === 'play') {
+        if (!gameActive && currentMode === 'play' && (!wsClient || !wsClient.isMultiplayer)) {
             if (wsClient) wsClient.close();
             startGame();
         }
@@ -516,6 +804,7 @@ document.addEventListener('keydown', (e) => {
         }
         currentMode = null;
         appEl.classList.add('hidden');
+        document.getElementById('lobby').style.display = 'none';
         menuEl.classList.remove('hidden');
         document.querySelector('.menu-buttons').classList.remove('hidden');
         document.getElementById('difficultySelect').classList.add('hidden');

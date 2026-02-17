@@ -13,6 +13,7 @@
         <h1>Lunar Lander</h1>
         <div class="menu-buttons">
             <button id="playBtn" class="menu-btn">Play Game</button>
+            <button id="multiplayerBtn" class="menu-btn">Multiplayer</button>
             <button id="spectateBtn" class="menu-btn">Spectate Live Game</button>
             <button id="replayBtn" class="menu-btn">Watch Replay</button>
             <button id="helpBtn" class="menu-btn">How to Play</button>
@@ -91,6 +92,41 @@
             <button id="backFromReplays" class="menu-btn">Back</button>
         </div>
     </div>
+    <div id="lobby" class="hidden">
+        <h1>Multiplayer Lobby</h1>
+        <div class="lobby-buttons">
+            <button id="createRoomBtn" class="menu-btn">Create Room</button>
+            <button id="joinRoomBtn" class="menu-btn">Join Room</button>
+        </div>
+        <div id="roomList" class="room-list">
+            <div class="room-list-header">
+                <h3>Available Rooms</h3>
+                <button id="refreshRoomsBtn" class="refresh-btn">↻ Refresh</button>
+            </div>
+            <div id="roomListContent"></div>
+        </div>
+        <button id="backFromLobby" class="menu-btn">Back to Menu</button>
+    </div>
+    
+    <!-- Waiting Lobby -->
+    <div id="waitingLobby" class="hidden">
+        <div class="waiting-content">
+            <h1>Waiting for Game to Start</h1>
+            <div id="roomInfo">
+                <div id="roomName">Room: Loading...</div>
+            </div>
+            <div id="playerListSection">
+                <h3>Players in Room:</h3>
+                <div id="playerNames"></div>
+            </div>
+            <div id="gameControls">
+                <button id="startGameBtn" class="menu-btn primary hidden">Start Game</button>
+                <div id="waitingMessage" class="hidden">Waiting for room creator to start the game...</div>
+            </div>
+            <button id="leaveLobbyBtn" class="menu-btn danger">Leave Room</button>
+        </div>
+    </div>
+    
     <div id="app" class="hidden">
         <canvas id="gameCanvas" width="1200" height="800"></canvas>
         <div id="modeIndicator"></div>
@@ -118,6 +154,25 @@
     </div>
     <!-- Status box outside app to avoid flex container issues -->
     <div id="status" class="hidden">Connecting...</div>
+    
+    <!-- Create Room Modal -->
+    <div id="createRoomModal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Create Room</h2>
+            <div class="modal-field">
+                <label for="playerNameInput">Player Name:</label>
+                <input type="text" id="playerNameInput" maxlength="20" placeholder="Enter your name">
+            </div>
+            <div class="modal-field">
+                <label for="roomNameInput">Room Name:</label>
+                <input type="text" id="roomNameInput" maxlength="30" placeholder="Enter room name">
+            </div>
+            <div class="modal-buttons">
+                <button id="createRoomConfirm" class="modal-btn primary">Create</button>
+                <button id="createRoomCancel" class="modal-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
     
     <!-- Dev Tools Panel (toggle with ` key) -->
     <div id="devTools" class="hidden">

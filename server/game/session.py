@@ -6,20 +6,41 @@ from game.terrain import Terrain
 from game.replay import ReplayRecorder
 
 class GameSession:
-    def __init__(self, session_id, websocket, difficulty="simple", telemetry_mode="standard", update_rate=60):
+    def __init__(self, session_id, websocket, difficulty="simple", telemetry_mode="standard", update_rate=60, room_name=None):
         self.session_id = session_id
         self.websocket = websocket
         self.difficulty = difficulty
         self.telemetry_mode = telemetry_mode  # "standard" or "advanced"
         self.update_rate = update_rate  # Hz: 60 for humans/bots, 2-10 for LLMs
-        self.lander = Lander()
+        self.room_name = room_name
+        
+        # Multiplayer support - players dictionary
+        self.players = {}
+        
+        # Backward compatibility - create default player
+        default_player_id = "default"
+        self.players[default_player_id] = {
+            'lander': Lander(),
+            'thrust': False,
+            'rotate': None,
+            'websocket': websocket,
+            'name': 'Player',
+            'color': '#00ff00',
+            'status': 'playing',  # playing, crashed, landed
+            'finish_time': None
+        }
+        
+        # Keep reference for backward compatibility
+        self.lander = self.players[default_player_id]['lander']
+        self.current_thrust = False
+        self.current_rotate = None
+        
         self.terrain = Terrain(difficulty=difficulty)
         self.running = False
+        self.waiting = True  # New: waiting for game to start
         self.start_time = None
         self.input_count = 0
         self.last_update = time.time()
-        self.current_thrust = False
-        self.current_rotate = None
         self.user_id = "anonymous"
         self.replay = None
         self.record_replay = True  # Enable replay recording
@@ -27,11 +48,18 @@ class GameSession:
         
         # Bot metadata (optional, for future leaderboard/registration)
         self.bot_name = None
+    
+    def get_session_info(self):
+        """Get formatted session info for logging"""
+        mode = "multiplayer" if len(self.players) > 1 else "single-player"
+        name = self.room_name or self.session_id[:8]
+        return f"[{mode}:{name}]"
         self.bot_version = None
         self.bot_author = None
         
     async def start(self):
         self.running = True
+        # Don't set waiting = False here - let start_game() do it
         self.start_time = time.time()
         
         # Initialize replay recorder
@@ -40,8 +68,24 @@ class GameSession:
             self.replay.set_terrain(self.terrain.to_dict())
             
         await self.game_loop()
+    
+    def start_game(self):
+        """Start the game (called by room creator)"""
+        self.waiting = False
         
     async def game_loop(self):
+        
+        # Wait for game to start
+        while self.waiting and self.running:
+            await asyncio.sleep(0.1)
+        
+        if not self.running:
+            return
+        
+        
+        # Game has started - reset start time for accurate timing
+        self.start_time = time.time()
+            
         target_fps = 60
         dt = 1.0 / target_fps
         frame_count = 0
@@ -49,10 +93,48 @@ class GameSession:
         while self.running:
             loop_start = time.time()
             
-            # Update physics with current input state
-            self.lander.update(dt, self.current_thrust, self.current_rotate)
+            # Skip physics simulation while waiting
+            if self.waiting:
+                await asyncio.sleep(0.1)
+                continue
             
-            # Calculate altitude and speed for replay
+            # Update physics for all players
+            for player_id, player in self.players.items():
+                lander = player['lander']
+                
+                # Skip if player is already done
+                if player['status'] != 'playing':
+                    continue
+                    
+                lander.update(dt, player['thrust'], player['rotate'])
+                
+                # Check collision
+                terrain_y = self.terrain.get_height_at(lander.x)
+                is_landing, multiplier = self.terrain.is_landing_zone(lander.x)
+                lander.check_collision(terrain_y, is_landing)
+                
+                # Check bounds
+                if lander.x < 0 or lander.x > self.terrain.width:
+                    lander.crashed = True
+                
+                # Update player status
+                if lander.crashed:
+                    if player['status'] == 'playing':  # Only record time on first crash
+                        player['finish_time'] = time.time() - self.start_time
+                    player['status'] = 'crashed'
+                elif lander.landed:
+                    if player['status'] == 'playing':  # Only record time on first landing
+                        player['finish_time'] = time.time() - self.start_time
+                    player['status'] = 'landed'
+            
+            # Update backward compatibility references (use first player)
+            if self.players:
+                first_player = next(iter(self.players.values()))
+                self.lander = first_player['lander']
+                self.current_thrust = first_player['thrust']
+                self.current_rotate = first_player['rotate']
+            
+            # Calculate altitude and speed for replay (backward compatibility)
             terrain_height = self.terrain.get_height_at(self.lander.x)
             altitude = terrain_height - self.lander.y
             import math
@@ -62,25 +144,11 @@ class GameSession:
             if self.replay:
                 self.replay.record_frame(self.lander.to_dict(), terrain_height, altitude, speed, self.current_thrust)
             
-            # Check collision
-            terrain_y = self.terrain.get_height_at(self.lander.x)
-            is_landing, multiplier = self.terrain.is_landing_zone(self.lander.x)
+            # Check game over - only when ALL players are done
+            all_players_done = all(player['status'] != 'playing' for player in self.players.values())
             
-            # Debug: print terrain info every 2 seconds
-            current_time = time.time()
-            if int(current_time * 0.5) % 2 == 0 and int((current_time - 0.016) * 0.5) % 2 != 0:
-                speed = (self.lander.vx**2 + self.lander.vy**2)**0.5
-                print(f"[{current_time:.3f}] Alt: {800-self.lander.y:.0f}, Speed: {speed:.1f}, X: {self.lander.x:.0f}, Landing: {is_landing}")
-            
-            self.lander.check_collision(terrain_y, is_landing)
-            
-            # Check bounds
-            if self.lander.x < 0 or self.lander.x > self.terrain.width:
-                self.lander.crashed = True
-            
-            # Check game over
-            if self.lander.crashed or self.lander.landed:
-                # Send final telemetry with crashed/landed state
+            if all_players_done:
+                # Send final telemetry with all player states
                 await self.send_telemetry(send_to_spectators=True)
                 await self.send_game_over()
                 self.running = False
@@ -102,7 +170,7 @@ class GameSession:
             await asyncio.sleep(sleep_time)
             
     async def send_telemetry(self, send_to_spectators=True):
-        # Find nearest landing zone
+        # Find nearest landing zone (using first player for backward compatibility)
         nearest_zone = None
         min_distance = float('inf')
         
@@ -129,11 +197,23 @@ class GameSession:
         import math
         speed = math.sqrt(self.lander.vx**2 + self.lander.vy**2)
         
+        # Collect all players' states
+        players_data = {}
+        for player_id, player in self.players.items():
+            lander = player['lander']
+            players_data[player_id] = {
+                'lander': lander.to_dict(),
+                'name': player['name'],
+                'color': player['color'],
+                'thrusting': player['thrust'],
+                'status': player['status']
+            }
+        
         # Standard telemetry (always included)
         message = {
             "type": "telemetry",
             "timestamp": time.time(),
-            "lander": self.lander.to_dict(),
+            "terrain": self.terrain.to_dict(),
             "terrain_height": terrain_height,
             "altitude": altitude_above_terrain,
             "speed": speed,
@@ -142,6 +222,14 @@ class GameSession:
             "all_landing_zones": self.terrain.landing_zones,
             "spectator_count": len(self.spectators)
         }
+        
+        # Single-player vs multiplayer format
+        if len(self.players) == 1 and 'default' in self.players:
+            # Send single-player format (backward compatible)
+            message['lander'] = self.players['default']['lander'].to_dict()
+        else:
+            # Send multiplayer format
+            message['players'] = players_data
         
         # Advanced telemetry (only for AI clients)
         if self.telemetry_mode == "advanced":
@@ -192,8 +280,13 @@ class GameSession:
                 "impact_speed": impact_speed
             })
         
-        # Send to player (always 60Hz)
-        await self.websocket.send_text(json.dumps(message))
+        # Send to all players
+        for player_id, player in list(self.players.items()):
+            try:
+                await player['websocket'].send_text(json.dumps(message))
+            except:
+                # Remove player if websocket is closed
+                self.remove_player(player_id)
         
         # Send to spectators (30Hz when send_to_spectators=True)
         if send_to_spectators:
@@ -201,15 +294,13 @@ class GameSession:
                 try:
                     await spectator_ws.send_text(json.dumps(message))
                 except:
-                    self.spectators.remove(spectator_ws)
+                    if spectator_ws in self.spectators:
+                        self.spectators.remove(spectator_ws)
         
     async def send_game_over(self):
         elapsed_time = time.time() - self.start_time
         
-        # Calculate score
-        score = self.calculate_score(elapsed_time)
-        
-        # Finalize replay
+        # Finalize replay (using first player for backward compatibility)
         if self.replay:
             self.replay.finalize(
                 self.lander.landed,
@@ -222,19 +313,58 @@ class GameSession:
         else:
             replay_id = None
         
-        message = {
-            "type": "game_over",
-            "landed": self.lander.landed,
-            "crashed": self.lander.crashed,
-            "time": elapsed_time,
-            "fuel_remaining": self.lander.fuel,
-            "inputs": self.input_count,
-            "score": score,
-            "replay_id": replay_id
-        }
+        # Single-player vs multiplayer format
+        if len(self.players) == 1 and 'default' in self.players:
+            # Single-player format (backward compatible)
+            score = self.calculate_score(elapsed_time)
+            status = "LANDED" if self.lander.landed else "CRASHED"
+            print(f"{self.get_session_info()} Game ended: {status} | Score: {score} | Time: {elapsed_time:.1f}s | Fuel: {self.lander.fuel:.0f}")
+            
+            message = {
+                "type": "game_over",
+                "landed": self.lander.landed,
+                "crashed": self.lander.crashed,
+                "time": elapsed_time,
+                "fuel_remaining": self.lander.fuel,
+                "inputs": self.input_count,
+                "score": score,
+                "replay_id": replay_id
+            }
+        else:
+            # Multiplayer format - include all players' results
+            players_results = []
+            for player_id, player in self.players.items():
+                lander = player['lander']
+                # Use player's individual finish time, or elapsed_time if still playing
+                player_time = player['finish_time'] if player['finish_time'] is not None else elapsed_time
+                player_score = self.calculate_player_score(lander, player_time)
+                players_results.append({
+                    "player_name": player['name'],
+                    "status": "landed" if lander.landed else "crashed",
+                    "time": player_time,
+                    "fuel_remaining": lander.fuel,
+                    "score": player_score
+                })
+            
+            # Log multiplayer results
+            print(f"{self.get_session_info()} Game ended:")
+            for result in sorted(players_results, key=lambda x: x['score'], reverse=True):
+                print(f"  {result['player_name']}: {result['status'].upper()} | Score: {result['score']} | Time: {result['time']:.1f}s")
+            
+            message = {
+                "type": "game_over",
+                "multiplayer": True,
+                "players_results": players_results,
+                "replay_id": replay_id
+            }
         
-        # Send to player
-        await self.websocket.send_text(json.dumps(message))
+        # Send to all players
+        for player_id, player in list(self.players.items()):
+            try:
+                await player['websocket'].send_text(json.dumps(message))
+            except:
+                # Remove player if websocket is closed
+                self.remove_player(player_id)
         
         # Send to all spectators
         for spectator_ws in self.spectators[:]:
@@ -269,6 +399,33 @@ class GameSession:
         score = int(score * multiplier)
         
         return score
+    
+    def calculate_player_score(self, lander, elapsed_time):
+        """Calculate score for a specific player's lander"""
+        if lander.crashed:
+            return 0
+        
+        if not lander.landed:
+            return 0
+        
+        # Base score for successful landing
+        score = 1000
+        
+        # Fuel bonus (up to 500 points)
+        fuel_bonus = int((lander.fuel / 1000) * 500)
+        score += fuel_bonus
+        
+        # Time bonus (faster = better, up to 300 points)
+        # Assume 60s is slow, 20s is fast
+        time_bonus = max(0, int(300 - (elapsed_time - 20) * 5))
+        score += time_bonus
+        
+        # Difficulty multiplier
+        multipliers = {"simple": 1.0, "medium": 1.5, "hard": 2.0}
+        multiplier = multipliers.get(self.difficulty, 1.0)
+        score = int(score * multiplier)
+        
+        return score
         
     async def send_initial_state(self):
         message = {
@@ -287,8 +444,13 @@ class GameSession:
             }
         }
         
-        # Send to player
-        await self.websocket.send_text(json.dumps(message))
+        # Send to all players
+        for player_id, player in list(self.players.items()):
+            try:
+                await player['websocket'].send_text(json.dumps(message))
+            except:
+                # Remove player if websocket is closed
+                self.remove_player(player_id)
         
         # Send to all spectators
         for spectator_ws in self.spectators[:]:
@@ -296,27 +458,98 @@ class GameSession:
                 await spectator_ws.send_text(json.dumps(message))
             except:
                 self.spectators.remove(spectator_ws)
+    
+    async def send_player_list(self):
+        """Send current player list to all players"""
+        players_list = []
+        for player_id, player in self.players.items():
+            players_list.append({
+                "id": player_id,
+                "name": player['name'],
+                "color": player['color'],
+                "is_creator": player_id == "default"
+            })
         
-    def handle_input(self, action):
+        message = {
+            "type": "player_list",
+            "players": players_list
+        }
+        
+        # Send to all players
+        for player_id, player in list(self.players.items()):
+            try:
+                await player['websocket'].send_text(json.dumps(message))
+            except:
+                # Remove player if websocket is closed
+                self.remove_player(player_id)
+        
+    def handle_input(self, action, player_id="default"):
         self.input_count += 1
+        
+        # Get player or use default
+        if player_id not in self.players:
+            player_id = "default"
+        
+        player = self.players[player_id]
+        
         # Only log state changes, not every input
         if action == "thrust" or action == "thrust_on":
-            if not self.current_thrust:
-                print(f"[{time.time():.3f}] THRUST ON")
-            self.current_thrust = True
+            if not player['thrust']:
+                print(f"{self.get_session_info()} THRUST ON (Player: {player_id})")
+            player['thrust'] = True
         elif action == "thrust_off":
-            if self.current_thrust:
-                print(f"[{time.time():.3f}] THRUST OFF")
-            self.current_thrust = False
+            if player['thrust']:
+                print(f"{self.get_session_info()} THRUST OFF (Player: {player_id})")
+            player['thrust'] = False
         elif action == "rotate_left":
-            if self.current_rotate != "left":
-                print(f"[{time.time():.3f}] ROTATE LEFT")
-            self.current_rotate = "left"
+            if player['rotate'] != "left":
+                print(f"{self.get_session_info()} ROTATE LEFT (Player: {player_id})")
+            player['rotate'] = "left"
         elif action == "rotate_right":
-            if self.current_rotate != "right":
-                print(f"[{time.time():.3f}] ROTATE RIGHT")
-            self.current_rotate = "right"
+            if player['rotate'] != "right":
+                print(f"{self.get_session_info()} ROTATE RIGHT (Player: {player_id})")
+            player['rotate'] = "right"
         elif action == "rotate_stop":
-            if self.current_rotate is not None:
-                print(f"[{time.time():.3f}] ROTATE STOP")
-            self.current_rotate = None
+            if player['rotate'] is not None:
+                print(f"{self.get_session_info()} ROTATE STOP (Player: {player_id})")
+            player['rotate'] = None
+        
+        # Update backward compatibility references if this is the default player
+        if player_id == "default":
+            self.current_thrust = player['thrust']
+            self.current_rotate = player['rotate']
+    
+    def add_player(self, player_id, websocket, name, color):
+        """Add a new player to the game session"""
+        self.players[player_id] = {
+            'lander': Lander(),
+            'thrust': False,
+            'rotate': None,
+            'websocket': websocket,
+            'name': name,
+            'color': color,
+            'status': 'playing',
+            'finish_time': None
+        }
+        print(f"{self.get_session_info()} Player {player_id} ({name}) joined")
+    
+    def remove_player(self, player_id):
+        """Remove a player from the game session"""
+        if player_id in self.players:
+            player_name = self.players[player_id]['name']
+            del self.players[player_id]
+            print(f"{self.get_session_info()} Player {player_id} ({player_name}) left")
+            
+            # Send updated player list to remaining players
+            if self.players:
+                import asyncio
+                asyncio.create_task(self.send_player_list())
+            
+            # If removing default player and others exist, promote first remaining player
+            if player_id == "default" and self.players:
+                first_player_id = next(iter(self.players.keys()))
+                first_player = self.players[first_player_id]
+                self.lander = first_player['lander']
+                self.current_thrust = first_player['thrust']
+                self.current_rotate = first_player['rotate']
+                self.websocket = first_player['websocket']

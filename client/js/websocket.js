@@ -15,9 +15,14 @@ export class WebSocketClient {
         this.onTelemetry = null;
         this.onInit = null;
         this.onGameOver = null;
+        this.onGameStarted = null;
+        this.onRoomCreated = null;
+        this.onRoomJoined = null;
+        this.onPlayerList = null;
         this.onError = null;
         this.lastPingTime = null;
         this.pingInterval = null;
+        this.isMultiplayer = false;
     }
     
     /**
@@ -116,11 +121,108 @@ export class WebSocketClient {
                     window.perfMonitor.recordLatency(latency);
                 }
                 break;
+            case 'room_created':
+                console.log('🏠 ROOM CREATED:', data.room_id);
+                this._displayRoomId(data.room_id);
+                if (this.onRoomCreated) this.onRoomCreated(data);
+                break;
+            case 'player_list':
+                console.log('👥 PLAYER LIST:', data.players);
+                if (this.onPlayerList) this.onPlayerList(data);
+                break;
+            case 'player_joined':
+                console.log('👤 PLAYER JOINED:', data);
+                break;
+            case 'player_left':
+                console.log('👋 PLAYER LEFT:', data);
+                break;
+            case 'game_started':
+                console.log('🎮 GAME STARTED');
+                if (this.onGameStarted) this.onGameStarted();
+                break;
+            case 'room_joined':
+                console.log('🏠 ROOM JOINED');
+                if (this.onRoomJoined) this.onRoomJoined(data);
+                break;
             case 'error':
                 logger.error('Server error:', data.message);
                 if (this.onError) this.onError(data);
                 break;
         }
+    }
+    
+    /**
+     * Display room ID in top-right corner
+     * @param {string} roomId - Room ID to display
+     */
+    _displayRoomId(roomId) {
+        if (!this.isMultiplayer) return;
+        
+        let roomDiv = document.getElementById('room-display');
+        if (!roomDiv) {
+            roomDiv = document.createElement('div');
+            roomDiv.id = 'room-display';
+            roomDiv.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.7);color:white;padding:5px 10px;border-radius:3px;font-family:monospace;font-size:12px;z-index:1000';
+            document.body.appendChild(roomDiv);
+        }
+        roomDiv.textContent = `Room: ${roomId}`;
+    }
+    
+    /**
+     * Create a new room
+     * @param {string} [playerName='Player1'] - Player name
+     * @param {string} [roomName=null] - Custom room name
+     * @returns {Promise<void>}
+     */
+    async createRoom(playerName = 'Player1', roomName = null) {
+        if (!this.connected) {
+            await this.connect();
+        }
+        
+        this.isMultiplayer = true;
+        
+        this.send({
+            type: 'create_room',
+            difficulty: 'simple',
+            player_name: playerName,
+            room_name: roomName
+        });
+    }
+    
+    /**
+     * Join a room
+     * @param {string} roomId - Room ID to join
+     * @param {string} [playerName='Player2'] - Player name
+     * @returns {Promise<void>}
+     */
+    async joinRoom(roomId, playerName = 'Player2') {
+        if (!this.connected) {
+            await this.connect();
+        }
+        
+        this.isMultiplayer = true;
+        
+        this.send({
+            type: 'join_room',
+            room_id: roomId,
+            player_name: playerName
+        });
+        
+        // Wait for room_joined confirmation from server
+        return new Promise((resolve, reject) => {
+            const originalOnRoomJoined = this.onRoomJoined;
+            const timeout = setTimeout(() => {
+                reject(new Error('Join room timeout'));
+            }, 10000); // 10 second timeout
+            
+            this.onRoomJoined = (data) => {
+                clearTimeout(timeout);
+                if (originalOnRoomJoined) {
+                    originalOnRoomJoined(data);
+                }
+                resolve();
+            };
+        });
     }
     
     /**
@@ -131,6 +233,8 @@ export class WebSocketClient {
      * @param {number} [updateRate=60] - Update rate in Hz
      */
     startGame(difficulty = 'simple', token = null, telemetryMode = 'standard', updateRate = 60) {
+        this.isMultiplayer = false;
+        
         const message = {
             type: 'start',
             difficulty: difficulty,
@@ -180,6 +284,10 @@ export class WebSocketClient {
         this.onTelemetry = null;
         this.onInit = null;
         this.onGameOver = null;
+        this.onGameStarted = null;
+        this.onRoomCreated = null;
+        this.onRoomJoined = null;
+        this.onPlayerList = null;
         this.onError = null;
     }
 }
