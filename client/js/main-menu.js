@@ -87,10 +87,6 @@ window.joinRoom = async function(roomId, playerName = 'Player2') {
         };
         
         wsClient.onTelemetry = (data) => {
-            console.log('data.players exists:', !!data.players);
-            console.log('data.lander exists:', !!data.lander);
-            console.log('Setting mode:', data.players ? 'multiplayer' : 'single-player');
-            
             const stateUpdate = {
                 terrain: data.terrain || stateManager.state.terrain,
                 thrusting: data.thrusting || false,
@@ -606,10 +602,6 @@ async function startGame(difficulty = 'simple') {
         };
         
         wsClient.onTelemetry = (data) => {
-            console.log('data.players exists:', !!data.players);
-            console.log('data.lander exists:', !!data.lander);
-            console.log('Setting mode:', data.players ? 'multiplayer' : 'single-player');
-            
             const stateUpdate = {
                 terrain: data.terrain || stateManager.state.terrain,
                 thrusting: data.thrusting || false,
