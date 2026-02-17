@@ -48,13 +48,18 @@ def cleanup_stale_sessions():
     stale_sessions = []
     
     for session_id, session in sessions.items():
+        # Remove finished games that are idle
         if not session.running and session.start_time:
             idle_time = current_time - session.start_time
             if idle_time > SESSION_TIMEOUT:
                 stale_sessions.append(session_id)
+        # Remove waiting rooms with no players
+        elif session.waiting and len(session.players) == 0:
+            stale_sessions.append(session_id)
     
     for session_id in stale_sessions:
-        print(f"Removing stale session: {session_id}")
+        session = sessions[session_id]
+        print(f"{session.get_session_info()} Removing stale session")
         del sessions[session_id]
     
     return len(stale_sessions)
@@ -62,6 +67,12 @@ def cleanup_stale_sessions():
 @app.get("/health")
 async def health():
     return {"status": "ok", "firebase_enabled": FIREBASE_ENABLED}
+
+@app.post("/cleanup")
+async def manual_cleanup():
+    """Manually trigger session cleanup"""
+    removed = cleanup_stale_sessions()
+    return {"status": "ok", "sessions_removed": removed}
 
 @app.get("/games")
 @limiter.limit("30/minute")
@@ -374,6 +385,19 @@ async def websocket_endpoint(websocket: WebSocket):
             difficulty = message.get("difficulty", "simple")
             player_name = message.get("player_name", "Player")
             room_name = message.get('room_name', None)
+            
+            # Check for duplicate room name
+            if room_name:
+                duplicate = any(
+                    session.room_name == room_name and session.waiting 
+                    for session in sessions.values()
+                )
+                if duplicate:
+                    await websocket.send_text(json.dumps({
+                        "type": "error",
+                        "message": f"Room name '{room_name}' already exists. Please choose a different name."
+                    }))
+                    return  # Exit the websocket handler
             
             # Validate difficulty
             if difficulty not in ["simple", "medium", "hard"]:
