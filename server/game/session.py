@@ -27,7 +27,8 @@ class GameSession:
             'websocket': websocket,
             'name': 'Player',
             'color': '#00ff00',
-            'status': 'playing'  # playing, crashed, landed
+            'status': 'playing',  # playing, crashed, landed
+            'finish_time': None
         }
         
         # Keep reference for backward compatibility
@@ -119,8 +120,12 @@ class GameSession:
                 
                 # Update player status
                 if lander.crashed:
+                    if player['status'] == 'playing':  # Only record time on first crash
+                        player['finish_time'] = time.time() - self.start_time
                     player['status'] = 'crashed'
                 elif lander.landed:
+                    if player['status'] == 'playing':  # Only record time on first landing
+                        player['finish_time'] = time.time() - self.start_time
                     player['status'] = 'landed'
             
             # Update backward compatibility references (use first player)
@@ -333,11 +338,13 @@ class GameSession:
             players_results = []
             for player_id, player in self.players.items():
                 lander = player['lander']
-                player_score = self.calculate_player_score(lander, elapsed_time)
+                # Use player's individual finish time, or elapsed_time if still playing
+                player_time = player['finish_time'] if player['finish_time'] is not None else elapsed_time
+                player_score = self.calculate_player_score(lander, player_time)
                 players_results.append({
                     "player_name": player['name'],
                     "status": "landed" if lander.landed else "crashed",
-                    "time": elapsed_time,
+                    "time": player_time,
                     "fuel_remaining": lander.fuel,
                     "score": player_score
                 })
@@ -525,7 +532,8 @@ class GameSession:
             'websocket': websocket,
             'name': name,
             'color': color,
-            'status': 'playing'
+            'status': 'playing',
+            'finish_time': None
         }
         print(f"[{time.time():.3f}] Player {player_id} ({name}) joined")
     
