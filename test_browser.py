@@ -592,13 +592,35 @@ async def test_multiplayer_game(url="http://localhost", keep_open=False):
                 errors.append('No rooms found in Player 2 list')
                 return 1
             
-            # Handle the player name prompt dialog
+            # Set up dialog handler BEFORE clicking room
             page2.on('dialog', lambda dialog: dialog.accept('Player2'))
+            print('Player 2: Dialog handler set')
             
-            # Click first available room (room-item is clickable, not a button inside it)
-            room_item = await page2.wait_for_selector('.room-item', timeout=5000)
-            await room_item.click()
-            print('Player 2: Clicked room, waiting for join...')
+            # Get the room name Player 1 created
+            room_name_p1 = await page1.evaluate('document.querySelector("#roomName") ? document.querySelector("#roomName").textContent : null')
+            print(f'Player 1 room name: {room_name_p1}')
+            
+            # Find and click the specific room by name
+            room_found = await page2.evaluate(f'''
+                () => {{
+                    const rooms = document.querySelectorAll('.room-item');
+                    for (let room of rooms) {{
+                        const nameEl = room.querySelector('.room-name');
+                        if (nameEl && nameEl.textContent.includes('{room_name_p1}')) {{
+                            room.click();
+                            return true;
+                        }}
+                    }}
+                    return false;
+                }}
+            ''')
+            
+            if not room_found:
+                print(f'ERROR: Could not find room "{room_name_p1}" in Player 2 list')
+                errors.append('Room not found')
+                return 1
+            
+            print('Player 2: Clicked correct room, waiting for join...')
             
             # Wait for both players in waiting lobby
             await page2.wait_for_selector('#waitingLobby', timeout=5000)
