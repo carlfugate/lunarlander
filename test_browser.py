@@ -585,12 +585,20 @@ async def test_multiplayer_game(url="http://localhost", keep_open=False):
             await page2.click('#refreshRoomsBtn')
             await page2.wait_for_timeout(1000)
             
+            room_count = await page2.evaluate('document.querySelectorAll(".room-item").length')
+            print(f'Player 2: Found {room_count} rooms in list')
+            if room_count == 0:
+                print('ERROR: No rooms visible to Player 2')
+                errors.append('No rooms found in Player 2 list')
+                return 1
+            
             # Handle the player name prompt dialog
             page2.on('dialog', lambda dialog: dialog.accept('Player2'))
             
             # Click first available room (room-item is clickable, not a button inside it)
             room_item = await page2.wait_for_selector('.room-item', timeout=5000)
             await room_item.click()
+            print('Player 2: Clicked room, waiting for join...')
             
             # Wait for both players in waiting lobby
             await page2.wait_for_selector('#waitingLobby', timeout=5000)
