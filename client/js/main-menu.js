@@ -62,6 +62,8 @@ const menuEl = document.getElementById('menu');
 
 // Make perfMonitor globally available for WebSocket
 window.perfMonitor = perfMonitor;
+window.renderer = renderer;
+window.stateManager = stateManager;
 
 // Global helper function for joining rooms from console
 window.joinRoom = async function(roomId, playerName = 'Player2') {
