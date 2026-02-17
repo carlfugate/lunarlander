@@ -8,6 +8,7 @@ export class Renderer {
         this.particles = [];
         this.explosions = new Map(); // Track explosions per lander (key: lander object or ID)
         this.hasExploded = false; // For single-player backward compatibility
+        this.explodedLanders = new Set(); // Track which landers have already exploded
         
         // Starfield
         this.stars = this.generateStars(200);
@@ -152,8 +153,9 @@ export class Renderer {
         // Use player name or color as unique key (stable across frames)
         const landerKey = playerName || playerColor;
         
-        // Trigger explosion on crash (only once per lander)
-        if (lander.crashed && !this.explosions.has(landerKey)) {
+        // Trigger explosion on crash (only once per lander, ever)
+        if (lander.crashed && !this.explodedLanders.has(landerKey)) {
+            this.explodedLanders.add(landerKey);
             const explosion = {
                 x: lander.x,
                 y: lander.y,
