@@ -6,8 +6,8 @@ export class Renderer {
         this.height = canvas.height;
         this.camera = { x: 0, y: 0 };
         this.particles = [];
-        this.explosion = null;
-        this.hasExploded = false;
+        this.explosions = new Map(); // Track explosions per lander (key: lander object or ID)
+        this.hasExploded = false; // For single-player backward compatibility
         
         // Starfield
         this.stars = this.generateStars(200);
@@ -149,15 +149,18 @@ export class Renderer {
     drawLander(lander, thrusting, playerColor = '#888', playerName = '') {
         if (!lander) return;
         
-        // Trigger explosion on crash (only once per game)
-        if (lander.crashed && !this.hasExploded) {
-            this.hasExploded = true;
-            this.explosion = {
+        // Use lander position as unique key for explosions
+        const landerKey = `${lander.x}_${lander.y}`;
+        
+        // Trigger explosion on crash (only once per lander)
+        if (lander.crashed && !this.explosions.has(landerKey)) {
+            const explosion = {
                 x: lander.x,
                 y: lander.y,
                 time: 0,
                 duration: 1.5
             };
+            this.explosions.set(landerKey, explosion);
             
             // Create explosion particles
             for (let i = 0; i < 50; i++) {
@@ -175,8 +178,9 @@ export class Renderer {
             }
         }
         
-        // Don't draw lander if exploding
-        if (this.explosion && this.explosion.time < 0.5) return;
+        // Don't draw this lander if it's exploding
+        const explosion = this.explosions.get(landerKey);
+        if (explosion && explosion.time < 0.5) return;
         
         const x = lander.x - this.camera.x;
         const y = lander.y - this.camera.y;
@@ -278,11 +282,11 @@ export class Renderer {
     }
     
     updateParticles(dt = 1/60) {
-        // Update explosion timer
-        if (this.explosion) {
-            this.explosion.time += dt;
-            if (this.explosion.time > this.explosion.duration) {
-                this.explosion = null;
+        // Update all explosion timers
+        for (const [key, explosion] of this.explosions.entries()) {
+            explosion.time += dt;
+            if (explosion.time > explosion.duration) {
+                this.explosions.delete(key);
             }
         }
         

@@ -719,7 +719,7 @@ function gameLoop(timestamp) {
             const thrusting = stateManager.state.thrusting || (inputHandler ? inputHandler.isThrusting() : false);
             
             // Always render if there are particles or explosion (they animate)
-            const hasAnimation = renderer.particles.length > 0 || renderer.explosion;
+            const hasAnimation = renderer.particles.length > 0 || renderer.explosions.size > 0;
             
             // Only render if state changed OR animation is active
             const currentState = JSON.stringify({
