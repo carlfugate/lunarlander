@@ -146,7 +146,7 @@ export class WebSocketClient {
                 break;
             case 'room_joined':
                 console.log('🏠 ROOM JOINED');
-                if (this.onRoomJoined) this.onRoomJoined();
+                if (this.onRoomJoined) this.onRoomJoined(data);
                 break;
             case 'error':
                 logger.error('Server error:', data.message);
