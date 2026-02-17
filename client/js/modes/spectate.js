@@ -21,6 +21,7 @@ export function startSpectate(sessionId, onStart, onGameOver) {
     
     wsClient.onTelemetry = (data) => {
         const stateUpdate = {
+            terrain: data.terrain || stateManager.state.terrain,
             thrusting: data.thrusting || false,
             altitude: data.altitude || 0,
             speed: data.speed || 0,
