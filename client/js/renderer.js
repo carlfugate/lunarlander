@@ -149,8 +149,8 @@ export class Renderer {
     drawLander(lander, thrusting, playerColor = '#888', playerName = '') {
         if (!lander) return;
         
-        // Use lander position as unique key for explosions
-        const landerKey = `${lander.x}_${lander.y}`;
+        // Use player name or color as unique key (stable across frames)
+        const landerKey = playerName || playerColor;
         
         // Trigger explosion on crash (only once per lander)
         if (lander.crashed && !this.explosions.has(landerKey)) {
