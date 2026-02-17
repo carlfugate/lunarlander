@@ -487,23 +487,23 @@ class GameSession:
         # Only log state changes, not every input
         if action == "thrust" or action == "thrust_on":
             if not player['thrust']:
-                print(f"[{time.time():.3f}] THRUST ON (Player: {player_id})")
+                print(f"{self.get_session_info()} THRUST ON (Player: {player_id})")
             player['thrust'] = True
         elif action == "thrust_off":
             if player['thrust']:
-                print(f"[{time.time():.3f}] THRUST OFF (Player: {player_id})")
+                print(f"{self.get_session_info()} THRUST OFF (Player: {player_id})")
             player['thrust'] = False
         elif action == "rotate_left":
             if player['rotate'] != "left":
-                print(f"[{time.time():.3f}] ROTATE LEFT (Player: {player_id})")
+                print(f"{self.get_session_info()} ROTATE LEFT (Player: {player_id})")
             player['rotate'] = "left"
         elif action == "rotate_right":
             if player['rotate'] != "right":
-                print(f"[{time.time():.3f}] ROTATE RIGHT (Player: {player_id})")
+                print(f"{self.get_session_info()} ROTATE RIGHT (Player: {player_id})")
             player['rotate'] = "right"
         elif action == "rotate_stop":
             if player['rotate'] is not None:
-                print(f"[{time.time():.3f}] ROTATE STOP (Player: {player_id})")
+                print(f"{self.get_session_info()} ROTATE STOP (Player: {player_id})")
             player['rotate'] = None
         
         # Update backward compatibility references if this is the default player
