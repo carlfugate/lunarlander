@@ -301,7 +301,8 @@ class GameSession:
                 try:
                     await spectator_ws.send_text(json.dumps(message))
                 except:
-                    self.spectators.remove(spectator_ws)
+                    if spectator_ws in self.spectators:
+                        self.spectators.remove(spectator_ws)
         
     async def send_game_over(self):
         elapsed_time = time.time() - self.start_time
