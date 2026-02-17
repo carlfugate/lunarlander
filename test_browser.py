@@ -601,7 +601,7 @@ async def test_multiplayer_game(url="http://localhost", keep_open=False):
             await page2.wait_for_selector('#lobby', timeout=5000)
             
             # Refresh room list
-            await page2.click('#refreshRoomsBtn')
+            await page2.evaluate('document.querySelector("#refreshRoomsBtn").click()')
             await page2.wait_for_timeout(1500)
             
             room_count = await page2.evaluate('document.querySelectorAll(".room-item").length')
@@ -718,8 +718,8 @@ async def main():
             results.append((test_name, result))
             print(f"  {status}\n")
             
-            # Small delay between tests to avoid race conditions
-            await asyncio.sleep(0.5)
+            # Delay between tests to avoid race conditions
+            await asyncio.sleep(1.0)
         except Exception as e:
             print(f"  FAIL - {e}\n")
             results.append((test_name, 1))
