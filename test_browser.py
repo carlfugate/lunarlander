@@ -534,7 +534,7 @@ async def test_game_state_updates(url="http://localhost"):
 async def test_multiplayer_game(url="http://localhost", keep_open=False):
     """Test automated multiplayer game with 2 players"""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False if keep_open else True)
+        browser = await p.chromium.launch(headless=True)
         
         # Create two contexts for two players
         context1 = await browser.new_context()
@@ -607,8 +607,8 @@ async def test_multiplayer_game(url="http://localhost", keep_open=False):
             if not canvas1 or not canvas2:
                 return 1
             
-            # Keep game running for 5 seconds
-            await page1.wait_for_timeout(5000)
+            # Keep game running for 60 seconds
+            await page1.wait_for_timeout(60000)
             
             if keep_open:
                 print(f"Game running with room_id: {room_id}")
