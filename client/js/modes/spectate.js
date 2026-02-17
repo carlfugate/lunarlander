@@ -20,6 +20,7 @@ export function startSpectate(sessionId, onStart, onGameOver) {
     };
     
     wsClient.onGameOver = (data) => {
+        console.log('🏁 SPECTATE onGameOver received:', { multiplayer: data.multiplayer, hasPlayersResults: !!data.players_results, data: data });
         
         if (data.multiplayer && data.players_results) {
             // Multiplayer format - show all players' results
