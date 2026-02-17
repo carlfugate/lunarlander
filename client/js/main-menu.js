@@ -134,7 +134,7 @@ window.joinRoom = async function(roomId, playerName = 'Player2') {
                     `;
                 });
                 
-                resultsHtml += '<div style="margin-top: 15px;">Press R to restart | ESC for menu</div>';
+                resultsHtml += '<div style="margin-top: 15px;">Press ESC to return to menu</div>';
                 statusEl.innerHTML = resultsHtml;
                 statusEl.style.color = '#fff';
                 statusEl.style.borderColor = '#fff';
@@ -555,7 +555,7 @@ async function startGame(difficulty = 'simple') {
                     `;
                 });
                 
-                resultsHtml += '<div style="margin-top: 15px;">Press R to restart | ESC for menu</div>';
+                resultsHtml += '<div style="margin-top: 15px;">Press ESC to return to menu</div>';
                 statusEl.innerHTML = resultsHtml;
                 statusEl.style.color = '#fff';
                 statusEl.style.borderColor = '#fff';
@@ -689,7 +689,7 @@ document.addEventListener('keydown', (e) => {
         }
     }
     if (e.key === 'r' || e.key === 'R') {
-        if (!gameActive && currentMode === 'play') {
+        if (!gameActive && currentMode === 'play' && (!wsClient || !wsClient.isMultiplayer)) {
             if (wsClient) wsClient.close();
             startGame();
         }

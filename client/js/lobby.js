@@ -362,7 +362,7 @@ async function startMultiplayerGame(wsClient) {
                 `;
             });
             
-            resultsHtml += '<div style="margin-top: 15px;">Press R to restart | ESC for menu</div>';
+            resultsHtml += '<div style="margin-top: 15px;">Press ESC to return to menu</div>';
             statusEl.innerHTML = resultsHtml;
             statusEl.style.color = '#fff';
             statusEl.style.borderColor = '#fff';
