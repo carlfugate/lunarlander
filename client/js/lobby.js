@@ -60,7 +60,7 @@ async function joinRoom(roomId) {
         // Set up waiting lobby callbacks
         wsClient.onRoomJoined = async (data) => {
             console.log('✓ Joined room, showing waiting lobby');
-            showWaitingLobby(wsClient, false, roomId, null); // false = not room creator, no custom room name
+            showWaitingLobby(wsClient, false, roomId, data.room_name); // Use room_name from server response
         };
         
         wsClient.onPlayerList = (data) => {
@@ -124,7 +124,7 @@ async function createRoom(playerName, roomName) {
             await startMultiplayerGame(wsClient);
         };
         
-        await wsClient.createRoom(playerName);
+        await wsClient.createRoom(playerName, roomName);
         
         // Store wsClient globally
         window.wsClient = wsClient;

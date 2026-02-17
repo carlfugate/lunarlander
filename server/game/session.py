@@ -6,13 +6,14 @@ from game.terrain import Terrain
 from game.replay import ReplayRecorder
 
 class GameSession:
-    def __init__(self, session_id, websocket, difficulty="simple", telemetry_mode="standard", update_rate=60):
+    def __init__(self, session_id, websocket, difficulty="simple", telemetry_mode="standard", update_rate=60, room_name=None):
         print(f"DEBUG - GameSession.__init__() called for {session_id}")
         self.session_id = session_id
         self.websocket = websocket
         self.difficulty = difficulty
         self.telemetry_mode = telemetry_mode  # "standard" or "advanced"
         self.update_rate = update_rate  # Hz: 60 for humans/bots, 2-10 for LLMs
+        self.room_name = room_name
         
         # Multiplayer support - players dictionary
         self.players = {}

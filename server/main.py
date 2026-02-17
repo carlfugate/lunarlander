@@ -96,7 +96,7 @@ async def list_active_rooms(request: Request):
             status = "waiting" if session.waiting else "playing"
             rooms.append({
                 "id": session_id,
-                "name": f"Room {session_id[:8]}",
+                "name": session.room_name or session_id[:8],
                 "player_count": player_count,
                 "max_players": 8,
                 "difficulty": session.difficulty,
@@ -362,12 +362,13 @@ async def websocket_endpoint(websocket: WebSocket):
         elif message.get("type") == "create_room":
             difficulty = message.get("difficulty", "simple")
             player_name = message.get("player_name", "Player")
+            room_name = message.get('room_name', None)
             
             # Validate difficulty
             if difficulty not in ["simple", "medium", "hard"]:
                 difficulty = "simple"
             
-            session = GameSession(session_id, websocket, difficulty, "standard", 60)
+            session = GameSession(session_id, websocket, difficulty, "standard", 60, room_name=room_name)
             session.user_id = user_id
             
             # Update default player name and ensure player is added
@@ -492,7 +493,8 @@ async def websocket_endpoint(websocket: WebSocket):
             # Send room_joined confirmation to joining player
             await websocket.send_text(json.dumps({
                 'type': 'room_joined',
-                'room_id': room_id
+                'room_id': room_id,
+                'room_name': session.room_name
             }))
             
             # Only send initial state if game has already started

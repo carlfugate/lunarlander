@@ -175,9 +175,10 @@ export class WebSocketClient {
     /**
      * Create a new room
      * @param {string} [playerName='Player1'] - Player name
+     * @param {string} [roomName=null] - Custom room name
      * @returns {Promise<void>}
      */
-    async createRoom(playerName = 'Player1') {
+    async createRoom(playerName = 'Player1', roomName = null) {
         if (!this.connected) {
             await this.connect();
         }
@@ -187,7 +188,8 @@ export class WebSocketClient {
         this.send({
             type: 'create_room',
             difficulty: 'simple',
-            player_name: playerName
+            player_name: playerName,
+            room_name: roomName
         });
     }
     
