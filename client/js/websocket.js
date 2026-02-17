@@ -219,10 +219,10 @@ export class WebSocketClient {
                 reject(new Error('Join room timeout'));
             }, 10000); // 10 second timeout
             
-            this.onRoomJoined = () => {
+            this.onRoomJoined = (data) => {
                 clearTimeout(timeout);
                 if (originalOnRoomJoined) {
-                    originalOnRoomJoined();
+                    originalOnRoomJoined(data);
                 }
                 resolve();
             };
