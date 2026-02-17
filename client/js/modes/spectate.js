@@ -7,7 +7,6 @@ export function startSpectate(sessionId, onStart, onGameOver) {
     const wsClient = new WebSocketClient(wsUrl);
     
     wsClient.onInit = (data) => {
-        console.log('🎬 SPECTATE onInit called with data:', data);
         const stateUpdate = { terrain: data.terrain, thrusting: false };
         if (data.players) {
             stateUpdate.players = data.players;
@@ -20,31 +19,7 @@ export function startSpectate(sessionId, onStart, onGameOver) {
         onStart();
     };
     
-    wsClient.onTelemetry = (data) => {
-        console.log('📊 SPECTATE onTelemetry:', data.type, 'players:', !!data.players);
-        console.log('Setting state with players:', data.players ? Object.keys(data.players).length : 0);
-        const stateUpdate = {
-            terrain: data.terrain || stateManager.state.terrain,
-            thrusting: data.thrusting || false,
-            altitude: data.altitude || 0,
-            speed: data.speed || 0,
-            spectatorCount: data.spectator_count
-        };
-        
-        if (data.players) {
-            stateUpdate.players = data.players;
-            stateUpdate.lander = null;
-        } else {
-            stateUpdate.lander = data.lander;
-            stateUpdate.players = null;
-        }
-        
-        stateManager.setState(stateUpdate);
-        console.log('State after update:', { hasPlayers: !!stateManager.state.players, playerCount: stateManager.state.players ? Object.keys(stateManager.state.players).length : 0 });
-    };
-    
     wsClient.onGameOver = (data) => {
-        console.log('Spectate game over:', data);
         
         if (data.multiplayer && data.players_results) {
             // Multiplayer format - show all players' results
