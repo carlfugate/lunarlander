@@ -503,7 +503,6 @@ async def websocket_endpoint(websocket: WebSocket):
             # Only send initial state if game has already started
             if not session.waiting:
                 await session.send_initial_state()
-            else:
             
             # No game loop needed - joining existing session
             game_task = None
