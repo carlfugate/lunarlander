@@ -74,12 +74,15 @@ async def list_active_games(request: Request):
     
     games = []
     for session_id, session in sessions.items():
+        player_count = len(session.players)
         games.append({
             "session_id": session_id,
             "user_id": session.user_id,
             "difficulty": session.difficulty,
             "spectators": len(session.spectators),
-            "duration": time.time() - session.start_time if session.start_time else 0
+            "duration": time.time() - session.start_time if session.start_time else 0,
+            "is_multiplayer": player_count > 1,
+            "player_count": player_count
         })
     return {"games": games}
 

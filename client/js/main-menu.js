@@ -301,30 +301,72 @@ async function loadActiveGames() {
             return;
         }
         
-        listEl.innerHTML = '';
-        data.games.forEach(game => {
-            const gameItem = document.createElement('button');
-            gameItem.className = 'game-item';
-            gameItem.dataset.sessionId = game.session_id;
-            gameItem.setAttribute('role', 'button');
-            gameItem.setAttribute('aria-label', `Spectate ${game.user_id}'s game`);
-            
-            const playerDiv = document.createElement('div');
-            playerDiv.textContent = `Player: ${game.user_id}`;
-            
-            const difficultyDiv = document.createElement('div');
-            difficultyDiv.textContent = `Difficulty: ${game.difficulty}`;
-            
-            const statsDiv = document.createElement('div');
-            statsDiv.textContent = `Duration: ${game.duration.toFixed(0)}s | Spectators: ${game.spectators}`;
-            
-            gameItem.appendChild(playerDiv);
-            gameItem.appendChild(difficultyDiv);
-            gameItem.appendChild(statsDiv);
-            gameItem.addEventListener('click', () => spectateGame(game.session_id));
-            
-            listEl.appendChild(gameItem);
-        });
+        // Split games into single-player and multiplayer
+        const singlePlayerGames = data.games.filter(game => !game.is_multiplayer);
+        const multiplayerGames = data.games.filter(game => game.is_multiplayer);
+        
+        // Create two-column layout
+        listEl.innerHTML = `
+            <div style="display: flex; gap: 20px; align-items: flex-start;">
+                <div style="flex: 1;">
+                    <h3 style="color: #0f0; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #0f0; padding-bottom: 5px;">Single Player Games</h3>
+                    <div id="singlePlayerList"></div>
+                </div>
+                <div style="flex: 1;">
+                    <h3 style="color: #0f0; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #0f0; padding-bottom: 5px;">Multiplayer Games</h3>
+                    <div id="multiplayerList"></div>
+                </div>
+            </div>
+        `;
+        
+        const singlePlayerList = document.getElementById('singlePlayerList');
+        const multiplayerList = document.getElementById('multiplayerList');
+        
+        // Populate single-player games
+        if (singlePlayerGames.length === 0) {
+            singlePlayerList.innerHTML = '<p style="color: #888; text-align: center; padding: 20px;">No single-player games</p>';
+        } else {
+            singlePlayerGames.forEach(game => {
+                const gameItem = document.createElement('button');
+                gameItem.className = 'game-item';
+                gameItem.dataset.sessionId = game.session_id;
+                gameItem.setAttribute('role', 'button');
+                gameItem.setAttribute('aria-label', `Spectate ${game.user_id}'s game`);
+                
+                gameItem.innerHTML = `
+                    <div>Session: ${game.session_id.substring(0, 8)}...</div>
+                    <div>Player: ${game.user_id}</div>
+                    <div>Difficulty: ${game.difficulty}</div>
+                    <div>Duration: ${game.duration.toFixed(0)}s | Spectators: ${game.spectators}</div>
+                `;
+                
+                gameItem.addEventListener('click', () => spectateGame(game.session_id));
+                singlePlayerList.appendChild(gameItem);
+            });
+        }
+        
+        // Populate multiplayer games
+        if (multiplayerGames.length === 0) {
+            multiplayerList.innerHTML = '<p style="color: #888; text-align: center; padding: 20px;">No multiplayer games</p>';
+        } else {
+            multiplayerGames.forEach(game => {
+                const gameItem = document.createElement('button');
+                gameItem.className = 'game-item';
+                gameItem.dataset.sessionId = game.session_id;
+                gameItem.setAttribute('role', 'button');
+                gameItem.setAttribute('aria-label', `Spectate multiplayer game with ${game.player_count} players`);
+                
+                gameItem.innerHTML = `
+                    <div>Session: ${game.session_id.substring(0, 8)}...</div>
+                    <div>Players: ${game.player_count}</div>
+                    <div>Difficulty: ${game.difficulty}</div>
+                    <div>Duration: ${game.duration.toFixed(0)}s | Spectators: ${game.spectators}</div>
+                `;
+                
+                gameItem.addEventListener('click', () => spectateGame(game.session_id));
+                multiplayerList.appendChild(gameItem);
+            });
+        }
     } catch (error) {
         console.error('Failed to load games:', error);
         listEl.innerHTML = '<p style="color: #f00;">Failed to load games. Please try again.</p>';
