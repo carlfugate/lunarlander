@@ -317,6 +317,9 @@ class GameSession:
         if len(self.players) == 1 and 'default' in self.players:
             # Single-player format (backward compatible)
             score = self.calculate_score(elapsed_time)
+            status = "LANDED" if self.lander.landed else "CRASHED"
+            print(f"{self.get_session_info()} Game ended: {status} | Score: {score} | Time: {elapsed_time:.1f}s | Fuel: {self.lander.fuel:.0f}")
+            
             message = {
                 "type": "game_over",
                 "landed": self.lander.landed,
@@ -342,6 +345,11 @@ class GameSession:
                     "fuel_remaining": lander.fuel,
                     "score": player_score
                 })
+            
+            # Log multiplayer results
+            print(f"{self.get_session_info()} Game ended:")
+            for result in sorted(players_results, key=lambda x: x['score'], reverse=True):
+                print(f"  {result['player_name']}: {result['status'].upper()} | Score: {result['score']} | Time: {result['time']:.1f}s")
             
             message = {
                 "type": "game_over",
