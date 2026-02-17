@@ -48,6 +48,12 @@ class GameSession:
         
         # Bot metadata (optional, for future leaderboard/registration)
         self.bot_name = None
+    
+    def get_session_info(self):
+        """Get formatted session info for logging"""
+        mode = "multiplayer" if len(self.players) > 1 else "single-player"
+        name = self.room_name or self.session_id[:8]
+        return f"[{mode}:{name}]"
         self.bot_version = None
         self.bot_author = None
         
@@ -527,14 +533,14 @@ class GameSession:
             'status': 'playing',
             'finish_time': None
         }
-        print(f"[{time.time():.3f}] Player {player_id} ({name}) joined")
+        print(f"{self.get_session_info()} Player {player_id} ({name}) joined")
     
     def remove_player(self, player_id):
         """Remove a player from the game session"""
         if player_id in self.players:
             player_name = self.players[player_id]['name']
             del self.players[player_id]
-            print(f"[{time.time():.3f}] Player {player_id} ({player_name}) left")
+            print(f"{self.get_session_info()} Player {player_id} ({player_name}) left")
             
             # Send updated player list to remaining players
             if self.players:

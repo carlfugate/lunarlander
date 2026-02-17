@@ -130,7 +130,7 @@ async def spectate_game(websocket: WebSocket, session_id: str):
             return
         
         session.spectators.append(websocket)
-        print(f"Spectator joined session {session_id} (total: {len(session.spectators)})")
+        print(f"{session.get_session_info()} Spectator joined (total: {len(session.spectators)})")
         
         # Send current game state to spectator immediately
         init_message = {
@@ -170,11 +170,12 @@ async def spectate_game(websocket: WebSocket, session_id: str):
                 break
                 
     except Exception as e:
-        print(f"Spectator error: {e}")
+        print(f"{session.get_session_info()} Spectator error: {e}")
     finally:
         if session_id in sessions and websocket in sessions[session_id].spectators:
-            sessions[session_id].spectators.remove(websocket)
-            print(f"Spectator left session {session_id} (remaining: {len(sessions[session_id].spectators)})")
+            session = sessions[session_id]
+            session.spectators.remove(websocket)
+            print(f"{session.get_session_info()} Spectator left (remaining: {len(session.spectators)})")
 
 @app.get("/replays")
 @limiter.limit("30/minute")
