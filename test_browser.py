@@ -416,20 +416,27 @@ async def test_websocket_connection(url="http://localhost"):
             # Check console logs for WebSocket connection
             ws_connected = any('WebSocket connected' in log for log in console_logs)
             if not ws_connected:
+                print(f"WebSocket test: No 'WebSocket connected' message found")
+                print(f"Console logs: {console_logs[:10]}")
                 return 1
             
             # Check for telemetry data
             telemetry_received = any('Telemetry' in log or 'telemetry' in log for log in console_logs)
             if not telemetry_received:
+                print(f"WebSocket test: No telemetry messages found")
                 return 1
             
             # Check for connection errors
             connection_errors = any('error' in log.lower() and ('websocket' in log.lower() or 'connection' in log.lower()) for log in console_logs)
             if connection_errors:
+                print(f"WebSocket test: Connection errors found in logs")
                 return 1
             
             return 0 if not errors else 1
-        except Exception:
+        except Exception as e:
+            print(f"WebSocket test exception: {e}")
+            import traceback
+            traceback.print_exc()
             return 1
         finally:
             await browser.close()
@@ -699,6 +706,9 @@ async def main():
             status = "PASS" if result == 0 else "FAIL"
             results.append((test_name, result))
             print(f"  {status}\n")
+            
+            # Small delay between tests to avoid race conditions
+            await asyncio.sleep(0.5)
         except Exception as e:
             print(f"  FAIL - {e}\n")
             results.append((test_name, 1))
