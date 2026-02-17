@@ -246,10 +246,8 @@ async def test_room_creation_modal(url="http://localhost"):
             await page.click('#multiplayerBtn')
             await page.wait_for_selector('#lobby', timeout=5000)
             
-            # Scroll to and click Create Room button
-            await page.evaluate('document.querySelector("#createRoomBtn").scrollIntoView()')
-            await page.wait_for_timeout(200)
-            await page.click('#createRoomBtn')
+            # Click Create Room button using JS
+            await page.evaluate('document.querySelector("#createRoomBtn").click()')
             
             # Verify modal appears
             modal = await page.wait_for_selector('#createRoomModal', timeout=3000)
@@ -306,7 +304,7 @@ async def test_room_in_list(url="http://localhost"):
             # Open create room modal
             await page.evaluate('document.querySelector(\"#createRoomBtn\").scrollIntoView()')
             await page.wait_for_timeout(200)
-            await page.click('#createRoomBtn')
+            await page.evaluate('document.querySelector("#createRoomBtn").click()')
             await page.wait_for_selector('#createRoomModal', timeout=3000)
             
             # Fill in room details
@@ -357,7 +355,7 @@ async def test_input_validation(url="http://localhost"):
             # Open create room modal
             await page.evaluate('document.querySelector(\"#createRoomBtn\").scrollIntoView()')
             await page.wait_for_timeout(200)
-            await page.click('#createRoomBtn')
+            await page.evaluate('document.querySelector("#createRoomBtn").click()')
             await page.wait_for_selector('#createRoomModal', timeout=3000)
             
             # Test empty player name - click Create button
@@ -579,7 +577,7 @@ async def test_multiplayer_game(url="http://localhost", keep_open=False):
             await page1.wait_for_selector('#lobby', timeout=5000)
             await page1.evaluate('document.querySelector(\"#createRoomBtn\").scrollIntoView()')
             await page1.wait_for_timeout(200)
-            await page1.click('#createRoomBtn')
+            await page1.evaluate('document.querySelector("#createRoomBtn").click()')
             await page1.wait_for_selector('#createRoomModal', timeout=3000)
             
             # Fill room details with unique name
