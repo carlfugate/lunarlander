@@ -300,10 +300,7 @@ class GameSession:
     async def send_game_over(self):
         elapsed_time = time.time() - self.start_time
         
-        # Calculate score
-        score = self.calculate_score(elapsed_time)
-        
-        # Finalize replay
+        # Finalize replay (using first player for backward compatibility)
         if self.replay:
             self.replay.finalize(
                 self.lander.landed,
@@ -316,16 +313,40 @@ class GameSession:
         else:
             replay_id = None
         
-        message = {
-            "type": "game_over",
-            "landed": self.lander.landed,
-            "crashed": self.lander.crashed,
-            "time": elapsed_time,
-            "fuel_remaining": self.lander.fuel,
-            "inputs": self.input_count,
-            "score": score,
-            "replay_id": replay_id
-        }
+        # Single-player vs multiplayer format
+        if len(self.players) == 1 and 'default' in self.players:
+            # Single-player format (backward compatible)
+            score = self.calculate_score(elapsed_time)
+            message = {
+                "type": "game_over",
+                "landed": self.lander.landed,
+                "crashed": self.lander.crashed,
+                "time": elapsed_time,
+                "fuel_remaining": self.lander.fuel,
+                "inputs": self.input_count,
+                "score": score,
+                "replay_id": replay_id
+            }
+        else:
+            # Multiplayer format - include all players' results
+            players_results = []
+            for player_id, player in self.players.items():
+                lander = player['lander']
+                player_score = self.calculate_player_score(lander, elapsed_time)
+                players_results.append({
+                    "player_name": player['name'],
+                    "status": "landed" if lander.landed else "crashed",
+                    "time": elapsed_time,
+                    "fuel_remaining": lander.fuel,
+                    "score": player_score
+                })
+            
+            message = {
+                "type": "game_over",
+                "multiplayer": True,
+                "players_results": players_results,
+                "replay_id": replay_id
+            }
         
         # Send to all players
         for player_id, player in list(self.players.items()):
@@ -355,6 +376,33 @@ class GameSession:
         
         # Fuel bonus (up to 500 points)
         fuel_bonus = int((self.lander.fuel / 1000) * 500)
+        score += fuel_bonus
+        
+        # Time bonus (faster = better, up to 300 points)
+        # Assume 60s is slow, 20s is fast
+        time_bonus = max(0, int(300 - (elapsed_time - 20) * 5))
+        score += time_bonus
+        
+        # Difficulty multiplier
+        multipliers = {"simple": 1.0, "medium": 1.5, "hard": 2.0}
+        multiplier = multipliers.get(self.difficulty, 1.0)
+        score = int(score * multiplier)
+        
+        return score
+    
+    def calculate_player_score(self, lander, elapsed_time):
+        """Calculate score for a specific player's lander"""
+        if lander.crashed:
+            return 0
+        
+        if not lander.landed:
+            return 0
+        
+        # Base score for successful landing
+        score = 1000
+        
+        # Fuel bonus (up to 500 points)
+        fuel_bonus = int((lander.fuel / 1000) * 500)
         score += fuel_bonus
         
         # Time bonus (faster = better, up to 300 points)
