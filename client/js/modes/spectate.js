@@ -7,6 +7,7 @@ export function startSpectate(sessionId, onStart, onGameOver) {
     const wsClient = new WebSocketClient(wsUrl);
     
     wsClient.onInit = (data) => {
+        console.log('🎬 SPECTATE onInit called with data:', data);
         const stateUpdate = { terrain: data.terrain, thrusting: false };
         if (data.players) {
             stateUpdate.players = data.players;
@@ -20,6 +21,7 @@ export function startSpectate(sessionId, onStart, onGameOver) {
     };
     
     wsClient.onTelemetry = (data) => {
+        console.log('📊 SPECTATE onTelemetry:', data.type, 'players:', !!data.players);
         const stateUpdate = {
             terrain: data.terrain || stateManager.state.terrain,
             thrusting: data.thrusting || false,
