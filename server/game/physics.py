@@ -62,18 +62,15 @@ class Lander:
             
             import time
             timestamp = time.time()
-            print(f"[{timestamp:.3f}] COLLISION: lander_y={self.y:.2f}, nose_y={nose_y:.2f}, terrain_y={terrain_y:.2f}, speed={speed:.2f}, angle={angle_degrees:.1f}°, upright={angle_upright}, landing_zone={is_landing_zone}")
             
             if is_landing_zone and angle_upright and speed < 5.0:  # Increased from 2.0 to 5.0
                 self.landed = True
                 self.y = terrain_y
                 self.vx = 0
                 self.vy = 0
-                print(f"[{timestamp:.3f}] ✓ LANDED SUCCESSFULLY!")
             else:
                 self.crashed = True
                 self.y = terrain_y
-                print(f"[{timestamp:.3f}] ✗ CRASHED! (speed: {speed:.2f} >= 5.0 OR angle: {angle_degrees:.1f}° >= 17° OR not landing zone: {not is_landing_zone})")
                 
     def to_dict(self):
         return {

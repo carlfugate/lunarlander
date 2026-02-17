@@ -592,12 +592,17 @@ async def test_multiplayer_game(url="http://localhost", keep_open=False):
                 errors.append('No rooms found in Player 2 list')
                 return 1
             
-            # Set up dialog handler BEFORE clicking room
-            page2.on('dialog', lambda dialog: dialog.accept('Player2'))
+            # Set up dialog handler BEFORE clicking room (must be async)
+            async def handle_dialog(dialog):
+                print(f'Player 2: Dialog appeared with message: {dialog.message}')
+                await dialog.accept('Player2')
+                print('Player 2: Dialog accepted with name "Player2"')
+            
+            page2.on('dialog', handle_dialog)
             print('Player 2: Dialog handler set')
             
             # Get the room name Player 1 created
-            room_name_p1 = await page1.evaluate('document.querySelector("#roomName") ? document.querySelector("#roomName").textContent : null')
+            room_name_p1 = await page1.evaluate('document.querySelector("#roomName") ? document.querySelector("#roomName").textContent.replace("Room: ", "") : null')
             print(f'Player 1 room name: {room_name_p1}')
             
             # Find and click the specific room by name
@@ -621,6 +626,13 @@ async def test_multiplayer_game(url="http://localhost", keep_open=False):
                 return 1
             
             print('Player 2: Clicked correct room, waiting for join...')
+            
+            # Give time for dialog to appear and be handled
+            await page2.wait_for_timeout(1000)
+            
+            # Wait for Player 2 to be in waiting lobby
+            await page2.wait_for_selector('#waitingLobby', timeout=5000)
+            print('Player 2: Successfully joined waiting lobby')
             
             # Wait for both players in waiting lobby
             await page2.wait_for_selector('#waitingLobby', timeout=5000)

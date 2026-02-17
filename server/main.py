@@ -10,8 +10,6 @@ import time
 import asyncio
 from game.session import GameSession
 
-print("🚀 UPDATED SERVER STARTING - DEBUG VERSION")
-
 try:
     from firebase_config import verify_token
     FIREBASE_ENABLED = True
@@ -238,7 +236,6 @@ async def websocket_endpoint(websocket: WebSocket):
         
         message = json.loads(data)
         
-        print(f"DEBUG - Received message type: {message.get('type')}")
         
         # Validate message structure
         if not isinstance(message, dict) or "type" not in message:
@@ -338,7 +335,6 @@ async def websocket_endpoint(websocket: WebSocket):
                         elif msg.get("type") == "start_game":
                             # Only room creator (default player) can start the game
                             if session.waiting:
-                                print(f"DEBUG - Starting game for room {session_id}")
                                 session.start_game()
                                 # Send initial state now that game is starting
                                 await session.send_initial_state()
@@ -386,7 +382,6 @@ async def websocket_endpoint(websocket: WebSocket):
             sessions[session_id] = session
             # Keep session.waiting = True for multiplayer rooms
             
-            print(f"DEBUG - Created multiplayer room {session_id}, waiting={session.waiting}")
             
             # Send room_id back to client
             await websocket.send_text(json.dumps({
@@ -429,7 +424,6 @@ async def websocket_endpoint(websocket: WebSocket):
                         elif msg.get("type") == "start_game":
                             # Only room creator (default player) can start the game
                             if session.waiting:
-                                print(f"DEBUG - Starting game for room {session_id}")
                                 session.start_game()
                                 # Send initial state now that game is starting
                                 await session.send_initial_state()
@@ -509,7 +503,6 @@ async def websocket_endpoint(websocket: WebSocket):
             if not session.waiting:
                 await session.send_initial_state()
             else:
-                print(f"DEBUG - Player {player_id} joined waiting room {room_id}, sent room_joined confirmation")
             
             # No game loop needed - joining existing session
             game_task = None
@@ -549,7 +542,6 @@ async def websocket_endpoint(websocket: WebSocket):
                         elif msg.get("type") == "start_game":
                             # Only room creator (default player) can start the game
                             if session.waiting and current_player_id == "default":
-                                print(f"DEBUG - Starting game for room {session_id} (from joiner handler)")
                                 session.start_game()
                                 # Send initial state now that game is starting
                                 await session.send_initial_state()
@@ -593,7 +585,6 @@ async def websocket_endpoint(websocket: WebSocket):
             session = sessions[session_id]
             
             # Debug: Show all players before removal
-            print(f"DEBUG - Players in session {session_id} before removal:")
             for pid, player in session.players.items():
                 print(f"  Player {pid}: {player['name']} (websocket: {id(player['websocket'])})")
             print(f"  Disconnecting websocket: {id(websocket)}")
@@ -602,9 +593,7 @@ async def websocket_endpoint(websocket: WebSocket):
             for pid, player in list(session.players.items()):
                 if player['websocket'] == websocket:
                     disconnected_player_name = player['name']
-                    print(f"DEBUG - Removing player {pid} ({disconnected_player_name})")
                     session.remove_player(pid)
-                    print(f"DEBUG - Players remaining after removal: {len(session.players)}")
                     
                     # Broadcast player_left to remaining players
                     if session.players:
@@ -621,7 +610,6 @@ async def websocket_endpoint(websocket: WebSocket):
                                 pass
                     break
             else:
-                print(f"DEBUG - No matching player found for websocket {id(websocket)} in session {session_id}")
             
             # Only delete session if no players left
             if session_id in sessions and not sessions[session_id].players:

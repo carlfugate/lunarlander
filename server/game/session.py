@@ -7,7 +7,6 @@ from game.replay import ReplayRecorder
 
 class GameSession:
     def __init__(self, session_id, websocket, difficulty="simple", telemetry_mode="standard", update_rate=60, room_name=None):
-        print(f"DEBUG - GameSession.__init__() called for {session_id}")
         self.session_id = session_id
         self.websocket = websocket
         self.difficulty = difficulty
@@ -39,7 +38,6 @@ class GameSession:
         self.terrain = Terrain(difficulty=difficulty)
         self.running = False
         self.waiting = True  # New: waiting for game to start
-        print(f"DEBUG - GameSession.__init__() completed for {session_id}, waiting={self.waiting}")
         self.start_time = None
         self.input_count = 0
         self.last_update = time.time()
@@ -67,22 +65,17 @@ class GameSession:
     
     def start_game(self):
         """Start the game (called by room creator)"""
-        print(f"DEBUG - start_game() called for session {self.session_id}, changing waiting from {self.waiting} to False")
         self.waiting = False
         
     async def game_loop(self):
-        print(f"DEBUG - game_loop started for session {self.session_id}, waiting={self.waiting}")
         
         # Wait for game to start
         while self.waiting and self.running:
-            print(f"DEBUG - game_loop waiting for start, session {self.session_id}")
             await asyncio.sleep(0.1)
         
         if not self.running:
-            print(f"DEBUG - game_loop exiting, session not running {self.session_id}")
             return
         
-        print(f"DEBUG - game_loop starting physics simulation for session {self.session_id}")
         
         # Game has started - reset start time for accurate timing
         self.start_time = time.time()
@@ -428,8 +421,6 @@ class GameSession:
         
     async def send_initial_state(self):
         import traceback
-        print(f"DEBUG - send_initial_state() called for session {self.session_id}, waiting={self.waiting}")
-        print("DEBUG - Call stack:")
         for line in traceback.format_stack()[-3:-1]:
             print(f"  {line.strip()}")
         
