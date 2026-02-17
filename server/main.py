@@ -304,7 +304,13 @@ async def websocket_endpoint(websocket: WebSocket):
             await session.send_player_list()
             
             # Send initial state
-            await session.send_initial_state()
+            try:
+                await session.send_initial_state()
+            except Exception as e:
+                print(f"Error in send_initial_state: {e}")
+                import traceback
+                traceback.print_exc()
+                raise
             
             # Start game loop in background (will wait until game starts)
             game_task = asyncio.create_task(session.start())

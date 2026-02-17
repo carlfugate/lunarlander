@@ -144,12 +144,6 @@ class GameSession:
             if self.replay:
                 self.replay.record_frame(self.lander.to_dict(), terrain_height, altitude, speed, self.current_thrust)
             
-            # Debug: print terrain info every 2 seconds
-            current_time = time.time()
-            if int(current_time * 0.5) % 2 == 0 and int((current_time - 0.016) * 0.5) % 2 != 0:
-                speed = (self.lander.vx**2 + self.lander.vy**2)**0.5
-                print(f"[{current_time:.3f}] Alt: {800-self.lander.y:.0f}, Speed: {speed:.1f}, X: {self.lander.x:.0f}, Landing: {self.terrain.is_landing_zone(self.lander.x)[0]}")
-            
             # Check game over - only when ALL players are done
             all_players_done = all(player['status'] != 'playing' for player in self.players.values())
             
@@ -426,10 +420,6 @@ class GameSession:
         return score
         
     async def send_initial_state(self):
-        import traceback
-        for line in traceback.format_stack()[-3:-1]:
-            print(f"  {line.strip()}")
-        
         message = {
             "type": "init",
             "terrain": self.terrain.to_dict(),
