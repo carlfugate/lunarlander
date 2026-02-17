@@ -113,6 +113,7 @@ export class WebSocketClient {
                 if (data.players) {
                     console.log('Players object found:', data.players);
                 }
+                console.log('onTelemetry callback exists?', !!this.onTelemetry);
                 if (this.onTelemetry) this.onTelemetry(data);
                 break;
             case 'game_over':
