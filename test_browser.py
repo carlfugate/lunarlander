@@ -718,6 +718,18 @@ async def main():
             results.append((test_name, result))
             print(f"  {status}\n")
             
+            # Cleanup server sessions between tests
+            try:
+                import aiohttp
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(f"{url}/cleanup") as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            if data.get('sessions_removed', 0) > 0:
+                                print(f"  Cleaned up {data['sessions_removed']} stale sessions\n")
+            except:
+                pass  # Cleanup is optional
+            
             # Delay between tests to avoid race conditions
             await asyncio.sleep(1.0)
         except Exception as e:
