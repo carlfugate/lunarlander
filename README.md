@@ -4,8 +4,23 @@
 
 A modern browser-based remake of the classic 1979 Atari Lunar Lander arcade game, featuring real-time multiplayer spectating, AI support, and competitive scoring.
 
-![Menu Screenshot](docs/images/menu.png)
-![Gameplay Screenshot](docs/images/gameplay.png)
+## Screenshots
+
+### Main Menu
+![Start Screen](docs/images/start.png)
+*Main menu showing single-player, multiplayer, spectate, and replay options*
+
+### Multiplayer Lobby
+![Multiplayer Lobby](docs/images/multiplayer.png)
+*Waiting lobby where players join before the game starts*
+
+### Live Gameplay
+![Gameplay](docs/images/gameplay.png)
+*Active game showing lander, terrain, HUD with fuel/speed/altitude, and landing zones*
+
+### Spectate Mode
+![Spectate Mode](docs/images/spectate.png)
+*Real-time spectating of live games with full telemetry display*
 
 ## 🎮 Features
 
