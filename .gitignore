@@ -5,5 +5,6 @@ __pycache__/
 firebase-credentials.json
 .DS_Store
 client/.env
+cli/__pycache__/
 
 .DS_Store
