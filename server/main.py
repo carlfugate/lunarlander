@@ -8,8 +8,11 @@ import json
 import uuid
 import time
 import asyncio
+import os
 from game.session import GameSession
 from metrics.live_stats import LiveStatsTracker
+from metrics.analytics import AnalyticsEngine
+from metrics.config import AnalyticsConfig
 
 try:
     from firebase_config import verify_token
@@ -39,6 +42,14 @@ replays = {}  # In-memory replay storage (would use database in production)
 
 # Initialize live stats tracker
 live_stats = LiveStatsTracker()
+
+# Initialize analytics engine with conference config
+analytics_config = AnalyticsConfig(
+    default_window_hours=int(os.getenv('ANALYTICS_WINDOW_HOURS', 8)),
+    cache_ttl_seconds=int(os.getenv('ANALYTICS_CACHE_TTL', 60)),
+    infinite_mode=os.getenv('ANALYTICS_INFINITE_MODE', 'false').lower() == 'true'
+)
+analytics = AnalyticsEngine(config=analytics_config)
 
 # Security limits
 MAX_SESSIONS = 100
@@ -225,6 +236,64 @@ async def get_replay(replay_id: str, request: Request):
 async def get_live_stats(request: Request):
     """Get real-time statistics"""
     return live_stats.get_stats()
+
+@app.get("/api/stats/aggregate")
+@limiter.limit("60/minute")
+async def get_aggregate_stats(request: Request, hours: int = None):
+    """
+    Get aggregate statistics
+    
+    Args:
+        hours: Time window in hours (default: 8 for conference day)
+               Use 0 for infinite mode
+    """
+    if hours == 0:
+        # Infinite mode
+        analytics.config.infinite_mode = True
+        stats = analytics.get_aggregate_stats()
+        analytics.config.infinite_mode = False
+    else:
+        stats = analytics.get_aggregate_stats(hours)
+    
+    return stats
+
+@app.get("/api/stats/trending")
+@limiter.limit("120/minute")
+async def get_trending_stats(request: Request):
+    """Get trending statistics (last hour vs previous)"""
+    return analytics.get_trending_stats()
+
+@app.get("/api/stats/recent")
+@limiter.limit("120/minute")
+async def get_recent_activity(request: Request, minutes: int = 5):
+    """
+    Get recent activity
+    
+    Args:
+        minutes: Time window in minutes (default: 5)
+    """
+    return analytics.get_recent_activity(minutes)
+
+@app.get("/api/stats/fun-facts")
+@limiter.limit("60/minute")
+async def get_fun_facts(request: Request, hours: int = None):
+    """
+    Get fun facts for presentation
+    
+    Args:
+        hours: Time window in hours (default: 8)
+    """
+    return analytics.get_fun_facts(hours)
+
+@app.get("/api/stats/config")
+async def get_analytics_config():
+    """Get current analytics configuration"""
+    return {
+        'default_window_hours': analytics.config.default_window_hours,
+        'cache_ttl_seconds': analytics.config.cache_ttl_seconds,
+        'infinite_mode': analytics.config.infinite_mode,
+        'recent_events_window': analytics.config.recent_events_window
+    }
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
