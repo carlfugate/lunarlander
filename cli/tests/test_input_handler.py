@@ -1,30 +1,35 @@
 import pytest
+import sys
 import time
 from unittest.mock import Mock, patch, MagicMock
 from input_handler import InputHandler
 
 class TestInputHandler:
     def test_init_with_keyboard(self):
-        with patch('input_handler.keyboard', create=True) as mock_keyboard:
+        mock_keyboard = Mock()
+        with patch.dict('sys.modules', {'keyboard': mock_keyboard}):
             handler = InputHandler()
             assert handler.use_keyboard is True
             assert handler.keyboard == mock_keyboard
 
     def test_init_without_keyboard(self):
-        with patch('input_handler.keyboard', side_effect=ImportError):
+        with patch.dict('sys.modules', {'keyboard': None}):
             with patch('input_handler.Terminal') as mock_terminal:
                 handler = InputHandler()
                 assert handler.use_keyboard is False
                 assert hasattr(handler, 'term')
 
     def test_init_keyboard_permission_error(self):
-        with patch('input_handler.keyboard', side_effect=PermissionError):
+        mock_keyboard = Mock()
+        mock_keyboard.side_effect = PermissionError()
+        with patch.dict('sys.modules', {'keyboard': mock_keyboard}):
             with patch('input_handler.Terminal') as mock_terminal:
                 handler = InputHandler()
                 assert handler.use_keyboard is False
 
-    def test_start_keyboard_mode(self, mock_keyboard):
-        with patch('input_handler.keyboard', mock_keyboard):
+    def test_start_keyboard_mode(self):
+        mock_keyboard = Mock()
+        with patch.dict('sys.modules', {'keyboard': mock_keyboard}):
             handler = InputHandler()
             handler._setup_keyboard_hooks = Mock()
             
@@ -34,7 +39,7 @@ class TestInputHandler:
             handler._setup_keyboard_hooks.assert_called_once()
 
     def test_start_blessed_mode(self):
-        with patch('input_handler.keyboard', side_effect=ImportError):
+        with patch.dict('sys.modules', {'keyboard': None}):
             with patch('input_handler.Terminal') as mock_terminal:
                 with patch('input_handler.threading.Thread') as mock_thread:
                     handler = InputHandler()
@@ -42,8 +47,9 @@ class TestInputHandler:
                     assert handler.running is True
                     mock_thread.assert_called_once()
 
-    def test_stop_keyboard_mode(self, mock_keyboard):
-        with patch('input_handler.keyboard', mock_keyboard):
+    def test_stop_keyboard_mode(self):
+        mock_keyboard = Mock()
+        with patch.dict('sys.modules', {'keyboard': mock_keyboard}):
             handler = InputHandler()
             handler.running = True
             handler.stop()
@@ -51,7 +57,7 @@ class TestInputHandler:
             mock_keyboard.unhook_all.assert_called_once()
 
     def test_stop_blessed_mode(self):
-        with patch('input_handler.keyboard', side_effect=ImportError):
+        with patch.dict('sys.modules', {'keyboard': None}):
             with patch('input_handler.Terminal'):
                 handler = InputHandler()
                 handler.thread = Mock()
@@ -102,7 +108,7 @@ class TestInputHandler:
         assert 'rotate_left' not in handler.actions
 
     def test_handle_blessed_key_mapping(self):
-        with patch('input_handler.keyboard', side_effect=ImportError):
+        with patch.dict('sys.modules', {'keyboard': None}):
             with patch('input_handler.Terminal'):
                 handler = InputHandler()
                 handler._on_key_press = Mock()
@@ -125,7 +131,7 @@ class TestInputHandler:
                     handler._on_key_press.assert_called_with(expected_action)
 
     def test_handle_blessed_key_unknown(self):
-        with patch('input_handler.keyboard', side_effect=ImportError):
+        with patch.dict('sys.modules', {'keyboard': None}):
             with patch('input_handler.Terminal'):
                 handler = InputHandler()
                 handler._on_key_press = Mock()
@@ -133,9 +139,10 @@ class TestInputHandler:
                 handler._handle_blessed_key('unknown_key')
                 handler._on_key_press.assert_not_called()
 
-    def test_setup_keyboard_hooks_permission_error(self, mock_keyboard):
+    def test_setup_keyboard_hooks_permission_error(self):
+        mock_keyboard = Mock()
         mock_keyboard.on_press_key.side_effect = PermissionError()
-        with patch('input_handler.keyboard', mock_keyboard):
+        with patch.dict('sys.modules', {'keyboard': mock_keyboard}):
             with patch('input_handler.Terminal') as mock_terminal:
                 with patch('input_handler.threading.Thread') as mock_thread:
                     handler = InputHandler()
