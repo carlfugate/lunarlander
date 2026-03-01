@@ -6,8 +6,9 @@ from blessed import Terminal
 class TerminalCapabilities:
     """Detect and manage terminal capabilities for graceful degradation."""
     
-    def __init__(self):
+    def __init__(self, force_ascii=False):
         self.term = Terminal()
+        self.force_ascii = force_ascii
     
     @property
     def color_support(self):
@@ -24,6 +25,8 @@ class TerminalCapabilities:
     @property
     def unicode_support(self):
         """Check if terminal supports Unicode characters."""
+        if self.force_ascii:
+            return False
         return self.term.does_styling
     
     @property

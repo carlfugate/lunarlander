@@ -35,19 +35,25 @@ class TestTerminalRenderer:
     def test_render_frame_play_mode(self, mock_panel, mock_layout_class, mock_console_class, mock_console):
         mock_console.size = (80, 24)
         mock_console_class.return_value = mock_console
+        
+        # Create a proper mock layout with split_column method
+        mock_game_panel = Mock()
+        mock_hud_panel = Mock()
         mock_layout = Mock()
+        mock_layout.__getitem__ = Mock(side_effect=lambda key: mock_game_panel if key == "game" else mock_hud_panel)
+        mock_layout.split_column = Mock()
         mock_layout_class.return_value = mock_layout
         
         renderer = TerminalRenderer({'unicode': True, 'colors': True})
         game_state = {
-            'lander': {'x': 100, 'y': 200, 'angle': 0, 'fuel': 500},
+            'lander': {'x': 100, 'y': 200, 'rotation': 0, 'fuel': 500},
             'telemetry': {'speed': 5.0, 'altitude': 150, 'thrusting': False}
         }
         
         renderer.render_frame(game_state)
         
-        mock_console.clear.assert_called_once()
-        mock_console.print.assert_called_once()
+        # Should print (cursor home + layout), not clear
+        assert mock_console.print.call_count >= 1
 
     @patch('renderer.Console')
     def test_draw_game_area(self, mock_console_class, mock_console):

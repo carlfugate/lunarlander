@@ -45,6 +45,20 @@ class TestTerminalCapabilities:
         assert caps.unicode_support is True
 
     @patch('terminal_caps.Terminal')
+    def test_force_ascii_mode(self, mock_terminal_class, mock_terminal):
+        mock_terminal.does_styling = True
+        mock_terminal_class.return_value = mock_terminal
+        caps = TerminalCapabilities(force_ascii=True)
+        assert caps.force_ascii is True
+        assert caps.unicode_support is False
+
+    @patch('terminal_caps.Terminal')
+    def test_force_ascii_default(self, mock_terminal_class, mock_terminal):
+        mock_terminal_class.return_value = mock_terminal
+        caps = TerminalCapabilities()
+        assert caps.force_ascii is False
+
+    @patch('terminal_caps.Terminal')
     def test_dimensions(self, mock_terminal_class, mock_terminal):
         mock_terminal_class.return_value = mock_terminal
         caps = TerminalCapabilities()

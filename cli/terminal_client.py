@@ -132,6 +132,9 @@ class TerminalClient:
                     self.state.update_from_telemetry(msg)
                 elif msg_type == "game_over":
                     self.state.update_from_game_over(msg)
+                    # Render final frame before stopping
+                    self.renderer.render_frame(self.state, self.mode)
+                    await asyncio.sleep(0.1)  # Brief pause to see final state
                     self.running = False
             except Exception as e:
                 self.console.print(f"[red]WebSocket error: {e}[/red]")
@@ -150,6 +153,19 @@ class TerminalClient:
     
     async def _input_loop(self):
         """Send input actions to server"""
+        rotation_task = None
+        thrust_task = None
+        
+        async def rotation_pulse(direction):
+            await self.ws_client.send_input(direction)
+            await asyncio.sleep(5/60)
+            await self.ws_client.send_input('rotate_stop')
+        
+        async def thrust_pulse():
+            await self.ws_client.send_input('thrust_on')
+            await asyncio.sleep(10/60)
+            await self.ws_client.send_input('thrust_off')
+        
         while self.running:
             try:
                 actions = self.input_handler.get_actions()
@@ -159,9 +175,19 @@ class TerminalClient:
                     self.running = False
                     break
                 
-                # Send game actions
+                # Send game actions without blocking
                 for action in actions:
-                    if action != "quit":
+                    if action == "quit":
+                        continue
+                    elif action in ['rotate_left', 'rotate_right']:
+                        # Start rotation pulse in background
+                        if rotation_task is None or rotation_task.done():
+                            rotation_task = asyncio.create_task(rotation_pulse(action))
+                    elif action == 'thrust':
+                        # Start thrust pulse in background
+                        if thrust_task is None or thrust_task.done():
+                            thrust_task = asyncio.create_task(thrust_pulse())
+                    else:
                         await self.ws_client.send_input(action)
                 
                 await asyncio.sleep(1/60)  # Check at 60Hz

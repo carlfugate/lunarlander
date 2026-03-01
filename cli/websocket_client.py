@@ -9,7 +9,7 @@ import json
 import aiohttp
 
 class WebSocketClient:
-    def __init__(self, uri="ws://localhost:8000"):
+    def __init__(self, uri="ws://localhost:8000/ws"):
         self.uri = uri
         self.ws = None
         self.mode = None

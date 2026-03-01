@@ -7,19 +7,11 @@ class InputHandler:
         self.actions: Set[str] = set()
         self.running = False
         self.thread = None
-        self.use_keyboard = True
+        self.use_keyboard = False  # Default to blessed on macOS
         
-        # Try keyboard library first
-        try:
-            import keyboard
-            self.keyboard = keyboard
-        except (ImportError, PermissionError):
-            self.use_keyboard = False
-            try:
-                from blessed import Terminal
-                self.term = Terminal()
-            except ImportError:
-                raise ImportError("Neither keyboard nor blessed library available")
+        # Always use blessed - keyboard library doesn't work on macOS without sudo
+        from blessed import Terminal
+        self.term = Terminal()
     
     def start(self):
         if self.running:
@@ -28,26 +20,23 @@ class InputHandler:
         self.running = True
         self.actions.clear()
         
-        if self.use_keyboard:
-            self._setup_keyboard_hooks()
-        else:
-            self.thread = threading.Thread(target=self._blessed_loop, daemon=True)
-            self.thread.start()
+        # Start blessed input thread
+        self.thread = threading.Thread(target=self._blessed_loop, daemon=True)
+        self.thread.start()
     
     def stop(self):
         self.running = False
-        
-        if self.use_keyboard:
-            try:
-                self.keyboard.unhook_all()
-            except:
-                pass
         
         if self.thread:
             self.thread.join(timeout=0.1)
     
     def get_actions(self) -> List[str]:
-        return list(self.actions)
+        actions = list(self.actions)
+        # Clear pulse actions after reading
+        self.actions.discard('rotate_left')
+        self.actions.discard('rotate_right')
+        self.actions.discard('thrust')
+        return actions
     
     def _setup_keyboard_hooks(self):
         try:
@@ -69,12 +58,12 @@ class InputHandler:
             self.keyboard.on_press_key('space', lambda _: self._on_key_press(' '))
             self.keyboard.on_press_key('esc', lambda _: self._on_key_press('quit'))
             self.keyboard.on_press_key('q', lambda _: self._on_key_press('quit'))
-        except PermissionError:
+        except (PermissionError, OSError, ValueError) as e:
+            # Fallback to blessed mode
             self.use_keyboard = False
-            from blessed import Terminal
-            self.term = Terminal()
-            self.thread = threading.Thread(target=self._blessed_loop, daemon=True)
-            self.thread.start()
+            if not hasattr(self, 'term'):
+                from blessed import Terminal
+                self.term = Terminal()
     
     def _blessed_loop(self):
         with self.term.cbreak(), self.term.hidden_cursor():
@@ -94,13 +83,11 @@ class InputHandler:
         
         action = key_map.get(key)
         if action:
-            if action in ['quit', ' ']:
-                self._on_key_press(action)
+            # For rotation and thrust, add single pulse command
+            if action in ['rotate_left', 'rotate_right', 'thrust']:
+                self.actions.add(action)
             else:
-                # Simulate press/release for blessed
-                self._on_key_press(action)
-                time.sleep(0.05)
-                self._on_key_release(action)
+                self.actions.add(action)
     
     def _on_key_press(self, action: str):
         if action == 'thrust':

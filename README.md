@@ -93,6 +93,28 @@ See [docs/CLI_CLIENT.md](docs/CLI_CLIENT.md) for full documentation.
 
 ## 🚀 Quick Start
 
+### Development Workflow
+
+**Before making changes:**
+```bash
+./cli/run_all_tests.sh  # Ensure tests pass
+```
+
+**After making changes:**
+```bash
+./cli/run_all_tests.sh  # Tests run automatically on commit
+git add .
+git commit -m "Your message"  # Pre-commit hook runs tests
+```
+
+**Pre-commit hook automatically:**
+- Runs unit tests (must pass)
+- Checks coverage (75% minimum)
+- Runs E2E tests (if server running)
+- Reminds you to do manual testing
+
+See [cli/TESTING_CHECKLIST.md](cli/TESTING_CHECKLIST.md) for detailed workflow.
+
 ### Play Locally
 
 **1. Start the server:**

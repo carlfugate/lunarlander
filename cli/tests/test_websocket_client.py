@@ -6,7 +6,7 @@ from websocket_client import WebSocketClient
 class TestWebSocketClient:
     def test_init(self):
         client = WebSocketClient()
-        assert client.uri == "ws://localhost:8000"
+        assert client.uri == "ws://localhost:8000/ws"
         assert client.ws is None
         assert client.mode is None
         assert client.http_base == "http://localhost:8000"
@@ -18,15 +18,17 @@ class TestWebSocketClient:
 
     @pytest.mark.asyncio
     async def test_connect(self, mock_websocket):
-        with patch('websockets.connect', return_value=mock_websocket) as mock_connect:
+        mock_connect = AsyncMock(return_value=mock_websocket)
+        with patch('websockets.connect', mock_connect):
             client = WebSocketClient()
             await client.connect()
-            mock_connect.assert_called_once_with("ws://localhost:8000")
+            mock_connect.assert_called_once_with("ws://localhost:8000/ws")
             assert client.ws == mock_websocket
 
     @pytest.mark.asyncio
     async def test_connect_custom_uri(self, mock_websocket):
-        with patch('websockets.connect', return_value=mock_websocket) as mock_connect:
+        mock_connect = AsyncMock(return_value=mock_websocket)
+        with patch('websockets.connect', mock_connect):
             client = WebSocketClient()
             await client.connect("ws://custom.com/ws")
             mock_connect.assert_called_once_with("ws://custom.com/ws")
@@ -52,17 +54,19 @@ class TestWebSocketClient:
 
     @pytest.mark.asyncio
     async def test_fetch_games(self):
-        mock_response = Mock()
+        mock_response = AsyncMock()
         mock_response.json = AsyncMock(return_value=[{"id": 1, "session": "abc"}])
         
-        with patch('aiohttp.ClientSession') as mock_session_class:
-            mock_session = AsyncMock()
-            mock_session.__aenter__ = AsyncMock(return_value=mock_session)
-            mock_session.__aexit__ = AsyncMock(return_value=None)
-            mock_session.get.return_value.__aenter__ = AsyncMock(return_value=mock_response)
-            mock_session.get.return_value.__aexit__ = AsyncMock(return_value=None)
-            mock_session_class.return_value = mock_session
-            
+        mock_get = AsyncMock()
+        mock_get.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_get.__aexit__ = AsyncMock(return_value=None)
+        
+        mock_session = AsyncMock()
+        mock_session.get = Mock(return_value=mock_get)
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+        
+        with patch('aiohttp.ClientSession', return_value=mock_session):
             client = WebSocketClient()
             result = await client.fetch_games()
             assert result == [{"id": 1, "session": "abc"}]
