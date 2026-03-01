@@ -19,7 +19,7 @@ class TerminalRenderer:
             self.terrain_chars = {'flat': '-', 'up': '/', 'down': '\\'}
             self.lander_chars = {'up': '^', 'left': '<', 'right': '>', 'down': 'v'}
     
-    def render_frame(self, game_state):
+    def render_frame(self, game_state, mode=None):
         layout = Layout()
         layout.split_column(
             Layout(name="game", ratio=4),
@@ -27,11 +27,16 @@ class TerminalRenderer:
         )
         
         # Game area
+        title = "Lunar Lander"
+        if mode == "replay":
+            title = "🔄 REPLAY - Lunar Lander"
+        elif mode == "spectate":
+            title = "👁️ SPECTATING - Lunar Lander"
         game_content = self._draw_game_area(game_state)
-        layout["game"].update(Panel(game_content, title="Lunar Lander"))
+        layout["game"].update(Panel(game_content, title=title))
         
         # HUD
-        hud_content = self._draw_hud(game_state)
+        hud_content = self._draw_hud(game_state, mode)
         layout["hud"].update(Panel(hud_content, title="HUD"))
         
         self.console.clear()
@@ -108,7 +113,7 @@ class TerminalRenderer:
                     if grid[zone_y][x] == ' ':
                         grid[zone_y][x] = '='
     
-    def _draw_hud(self, game_state):
+    def _draw_hud(self, game_state, mode=None):
         lander = game_state.get('lander', {})
         telemetry = game_state.get('telemetry', {})
         fuel = lander.get('fuel', 0)
@@ -118,6 +123,14 @@ class TerminalRenderer:
         thrusting = telemetry.get('thrusting', False)
         
         hud_text = Text()
+        
+        # Mode indicators
+        if mode == "replay":
+            hud_text.append("REPLAY", style="bold red" if self.colors else None)
+            hud_text.append("  ")
+        elif mode == "spectate":
+            hud_text.append("SPECTATING", style="bold blue" if self.colors else None)
+            hud_text.append("  ")
         
         # Fuel
         fuel_color = "red" if fuel < 100 else "yellow" if fuel < 300 else "green"

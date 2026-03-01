@@ -66,6 +66,7 @@ class InputHandler:
             self.keyboard.on_release_key('right', lambda _: self._on_key_release('rotate_right'))
             self.keyboard.on_release_key('d', lambda _: self._on_key_release('rotate_right'))
             
+            self.keyboard.on_press_key('space', lambda _: self._on_key_press(' '))
             self.keyboard.on_press_key('esc', lambda _: self._on_key_press('quit'))
             self.keyboard.on_press_key('q', lambda _: self._on_key_press('quit'))
         except PermissionError:
@@ -87,13 +88,14 @@ class InputHandler:
             'KEY_UP': 'thrust', 'w': 'thrust',
             'KEY_LEFT': 'rotate_left', 'a': 'rotate_left', 
             'KEY_RIGHT': 'rotate_right', 'd': 'rotate_right',
+            ' ': ' ',  # Space key
             'KEY_ESCAPE': 'quit', 'q': 'quit'
         }
         
         action = key_map.get(key)
         if action:
-            if action == 'quit':
-                self._on_key_press('quit')
+            if action in ['quit', ' ']:
+                self._on_key_press(action)
             else:
                 # Simulate press/release for blessed
                 self._on_key_press(action)
@@ -104,6 +106,12 @@ class InputHandler:
         if action == 'thrust':
             self.actions.add('thrust_on')
             self.actions.discard('thrust_off')
+        elif action == ' ':
+            # Toggle space key state for replay pause
+            if ' ' in self.actions:
+                self.actions.discard(' ')
+            else:
+                self.actions.add(' ')
         else:
             self.actions.add(action)
     

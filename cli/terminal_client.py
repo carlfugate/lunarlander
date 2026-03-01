@@ -5,6 +5,7 @@ Main orchestration of WebSocket, rendering, and input loops
 """
 import asyncio
 import argparse
+import time
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -30,7 +31,68 @@ class TerminalClient:
         self.renderer = TerminalRenderer(self.caps)
         self.input_handler = InputHandler()
         self.running = False
+        self.mode = "play"  # play or spectate
         
+    async def list_games(self):
+        """List active games and let user select one to spectate"""
+        try:
+            games = await self.ws_client.fetch_games()
+            
+            if not games:
+                self.console.print("[yellow]No active games found[/yellow]")
+                return None
+            
+            # Display games table
+            table = Table(title="Active Games")
+            table.add_column("ID", style="cyan")
+            table.add_column("Session ID")
+            table.add_column("Difficulty")
+            table.add_column("Spectators", justify="right")
+            table.add_column("Duration", justify="right")
+            
+            for i, game in enumerate(games, 1):
+                duration = f"{game.get('duration', 0):.1f}s"
+                table.add_row(
+                    str(i),
+                    game.get('session_id', 'N/A'),
+                    game.get('difficulty', 'N/A'),
+                    str(game.get('spectators', 0)),
+                    duration
+                )
+            
+            self.console.print(table)
+            
+            # Let user select
+            choice = Prompt.ask(
+                "Select game to spectate (number)", 
+                choices=[str(i) for i in range(1, len(games) + 1)]
+            )
+            
+            return games[int(choice) - 1]['session_id']
+            
+        except Exception as e:
+            self.console.print(f"[red]Error fetching games: {e}[/red]")
+            return None
+
+    async def spectate(self, session_id):
+        """Connect to spectate a game"""
+        self.mode = "spectate"
+        try:
+            await self.ws_client.spectate(session_id)
+            
+            self.running = True
+            
+            # Run spectate loops (no input needed)
+            await asyncio.gather(
+                self._websocket_loop(),
+                self._render_loop(),
+                return_exceptions=True
+            )
+        except Exception as e:
+            self.console.print(f"[red]Spectate error: {e}[/red]")
+        finally:
+            await self._cleanup()
+
     async def run(self):
         """Main entry point - orchestrate all async loops"""
         self.show_banner()
@@ -80,7 +142,7 @@ class TerminalClient:
         """Render at 30fps"""
         while self.running:
             try:
-                self.renderer.render_frame(self.state)
+                self.renderer.render_frame(self.state, self.mode)
                 await asyncio.sleep(1/30)  # 30fps
             except Exception as e:
                 self.console.print(f"[red]Render error: {e}[/red]")
@@ -129,6 +191,79 @@ class TerminalClient:
         self.console.print(f"Terminal: {self.caps.color_support} colors, "
                           f"{'Unicode' if self.caps.unicode_support else 'ASCII'}")
         self.console.print(f"Difficulty: {self.difficulty}\n")
+    
+    async def list_replays(self):
+        """List available replays"""
+        try:
+            replays = await self.ws_client.fetch_replays()
+            
+            table = Table(title="Available Replays")
+            table.add_column("ID", style="cyan")
+            table.add_column("Score")
+            table.add_column("Duration")
+            table.add_column("Status")
+            
+            for replay in replays:
+                table.add_row(
+                    str(replay.get('id', '')),
+                    str(replay.get('score', 0)),
+                    f"{replay.get('duration', 0):.1f}s",
+                    replay.get('status', 'unknown')
+                )
+            
+            self.console.print(table)
+            
+            if replays:
+                replay_id = Prompt.ask("Enter replay ID to play (or 'q' to quit)")
+                if replay_id != 'q':
+                    await self.replay(replay_id)
+        except Exception as e:
+            self.console.print(f"[red]Error fetching replays: {e}[/red]")
+    
+    async def replay(self, replay_id):
+        """Play back a specific replay"""
+        try:
+            replay_data = await self.ws_client.fetch_replay(replay_id)
+            frames = replay_data.get('frames', [])
+            
+            if not frames:
+                self.console.print("[red]No frames in replay[/red]")
+                return
+            
+            self.console.print(f"[green]Playing replay {replay_id} ({len(frames)} frames)[/green]")
+            self.console.print("[yellow]Controls: SPACE=pause, Q=quit[/yellow]")
+            
+            paused = False
+            frame_idx = 0
+            
+            self.input_handler.start()
+            
+            while frame_idx < len(frames):
+                # Check for input
+                actions = self.input_handler.get_actions()
+                if "quit" in actions:
+                    break
+                if " " in actions:  # Space key
+                    paused = not paused
+                
+                if not paused:
+                    frame = frames[frame_idx]
+                    
+                    # Update state with frame data
+                    self.state.update_from_telemetry(frame)
+                    
+                    # Render with REPLAY indicator
+                    self.renderer.render_frame(self.state, mode="replay")
+                    
+                    frame_idx += 1
+                
+                await asyncio.sleep(1/30)  # 30fps
+            
+            self.input_handler.stop()
+            self.console.print("[green]Replay finished[/green]")
+            
+        except Exception as e:
+            self.console.print(f"[red]Error playing replay: {e}[/red]")
     
     def show_game_over(self):
         """Display game over screen"""
@@ -203,8 +338,20 @@ async def main():
         mode, difficulty = show_menu()
         if mode == "play":
             args.difficulty = difficulty
+        elif mode == "spectate":
+            # Handle spectate mode
+            client = TerminalClient(args.uri, "simple", args.ansi_strict)
+            session_id = await client.list_games()
+            if session_id:
+                await client.spectate(session_id)
+            return
+        elif mode == "replay":
+            # Handle replay mode
+            client = TerminalClient(args.uri, "simple", args.ansi_strict)
+            await client.list_replays()
+            return
         else:
-            Console().print("[yellow]Spectate and Replay modes coming soon![/yellow]")
+            Console().print("[yellow]Unknown mode![/yellow]")
             return
     
     # Default difficulty

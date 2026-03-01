@@ -72,6 +72,25 @@ A modern browser-based remake of the classic 1979 Atari Lunar Lander arcade game
 - Example AI included
 - Perfect for competitions
 
+### CLI Terminal Client
+- Interactive terminal-based game client
+- Full gameplay with ASCII graphics
+- Real-time telemetry display
+- Perfect for headless environments
+
+**Installation:**
+```bash
+cd cli
+pip install -r requirements.txt
+```
+
+**Usage:**
+```bash
+python terminal_client.py
+```
+
+See [docs/CLI_CLIENT.md](docs/CLI_CLIENT.md) for full documentation.
+
 ## 🚀 Quick Start
 
 ### Play Locally
