@@ -1,9 +1,12 @@
 import asyncio
 import time
 import json
+import math
 from game.physics import Lander
 from game.terrain import Terrain
 from game.replay import ReplayRecorder
+from metrics.game_metrics import GameMetrics
+from metrics.collector import MetricsCollector
 
 class GameSession:
     def __init__(self, session_id, websocket, difficulty="simple", telemetry_mode="standard", update_rate=60, room_name=None):
@@ -48,6 +51,18 @@ class GameSession:
         
         # Bot metadata (optional, for future leaderboard/registration)
         self.bot_name = None
+        
+        # Metrics tracking - minimal overhead
+        self._metrics = {
+            'max_alt': 0,
+            'min_alt': 999999,
+            'max_speed': 0,
+            'thrust_frames': 0,
+            'rotation_changes': 0,
+            'last_rotate': None
+        }
+        self._metrics_collector = MetricsCollector()
+        self._game_metrics = None
     
     def get_session_info(self):
         """Get formatted session info for logging"""
@@ -137,8 +152,17 @@ class GameSession:
             # Calculate altitude and speed for replay (backward compatibility)
             terrain_height = self.terrain.get_height_at(self.lander.x)
             altitude = terrain_height - self.lander.y
-            import math
             speed = math.sqrt(self.lander.vx**2 + self.lander.vy**2)
+            
+            # MINIMAL metrics tracking (4 comparisons, 1 increment per frame)
+            if self.lander.y > self._metrics['max_alt']:
+                self._metrics['max_alt'] = self.lander.y
+            if self.lander.y < self._metrics['min_alt']:
+                self._metrics['min_alt'] = self.lander.y
+            if speed > self._metrics['max_speed']:
+                self._metrics['max_speed'] = speed
+            if self.current_thrust:
+                self._metrics['thrust_frames'] += 1
             
             # Record frame for replay
             if self.replay:
@@ -300,6 +324,12 @@ class GameSession:
     async def send_game_over(self):
         elapsed_time = time.time() - self.start_time
         
+        # Calculate final speed and altitude
+        terrain_height = self.terrain.get_height_at(self.lander.x)
+        altitude = terrain_height - self.lander.y
+        speed = math.sqrt(self.lander.vx**2 + self.lander.vy**2)
+        angle = abs(self.lander.rotation * 57.3)  # Convert to degrees
+        
         # Finalize replay (using first player for backward compatibility)
         if self.replay:
             self.replay.finalize(
@@ -319,6 +349,9 @@ class GameSession:
             score = self.calculate_score(elapsed_time)
             status = "LANDED" if self.lander.landed else "CRASHED"
             print(f"{self.get_session_info()} Game ended: {status} | Score: {score} | Time: {elapsed_time:.1f}s | Fuel: {self.lander.fuel:.0f}")
+            
+            # Finalize and save metrics (async, non-blocking)
+            await self._finalize_metrics(elapsed_time, score, speed, angle, altitude)
             
             message = {
                 "type": "game_over",
@@ -351,6 +384,10 @@ class GameSession:
             for result in sorted(players_results, key=lambda x: x['score'], reverse=True):
                 print(f"  {result['player_name']}: {result['status'].upper()} | Score: {result['score']} | Time: {result['time']:.1f}s")
             
+            # Finalize metrics for default player
+            score = self.calculate_score(elapsed_time)
+            await self._finalize_metrics(elapsed_time, score, speed, angle, altitude)
+            
             message = {
                 "type": "game_over",
                 "multiplayer": True,
@@ -372,6 +409,50 @@ class GameSession:
                 await spectator_ws.send_text(json.dumps(message))
             except:
                 pass
+    
+    async def _finalize_metrics(self, elapsed_time, score, speed, angle, altitude):
+        """Finalize and save game metrics (async, non-blocking)"""
+        # Create metrics object
+        game_metrics = GameMetrics(
+            game_id=self.session_id,
+            player_id=self.user_id,
+            difficulty=self.difficulty,
+            started_at=self.start_time,
+            ended_at=time.time(),
+            landed=self.lander.landed,
+            crashed=self.lander.crashed,
+            score=score,
+            duration=elapsed_time,
+            max_altitude=self._metrics['max_alt'],
+            min_altitude=self._metrics['min_alt'],
+            max_speed=self._metrics['max_speed'],
+            altitude_at_end=altitude,
+            speed_at_end=speed,
+            angle_at_end=angle,
+            fuel_remaining=int(self.lander.fuel),
+            fuel_used=1000 - int(self.lander.fuel),
+            thrust_frames=self._metrics['thrust_frames'],
+            total_inputs=self.input_count,
+            rotation_changes=self._metrics['rotation_changes']
+        )
+        
+        # Set landing-specific metrics
+        if self.lander.landed:
+            game_metrics.landing_speed = speed
+            game_metrics.landing_angle = angle
+        
+        # Convert to dict for storage and live stats
+        metrics_dict = game_metrics.to_dict()
+        
+        # Save metrics asynchronously (non-blocking)
+        await self._metrics_collector.save_game_metrics_async(metrics_dict)
+        
+        # Update live stats (import here to avoid circular dependency)
+        try:
+            from main import live_stats
+            live_stats.game_completed(metrics_dict)
+        except ImportError:
+            pass  # live_stats not available (e.g., in tests)
     
     def calculate_score(self, elapsed_time):
         """Calculate score based on landing success, fuel, time, and difficulty"""
@@ -491,6 +572,14 @@ class GameSession:
             player_id = "default"
         
         player = self.players[player_id]
+        
+        # Track rotation changes (only on change, not every frame)
+        if action in ['rotate_left', 'rotate_right']:
+            if self._metrics['last_rotate'] and self._metrics['last_rotate'] != action:
+                self._metrics['rotation_changes'] += 1
+            self._metrics['last_rotate'] = action
+        elif action == 'rotate_stop':
+            self._metrics['last_rotate'] = None
         
         # Only log state changes, not every input
         if action == "thrust" or action == "thrust_on":

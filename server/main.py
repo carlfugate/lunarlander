@@ -9,6 +9,7 @@ import uuid
 import time
 import asyncio
 from game.session import GameSession
+from metrics.live_stats import LiveStatsTracker
 
 try:
     from firebase_config import verify_token
@@ -35,6 +36,9 @@ app.add_middleware(
 # Store active sessions and replays
 sessions = {}
 replays = {}  # In-memory replay storage (would use database in production)
+
+# Initialize live stats tracker
+live_stats = LiveStatsTracker()
 
 # Security limits
 MAX_SESSIONS = 100
@@ -216,9 +220,18 @@ async def get_replay(replay_id: str, request: Request):
         return {"error": "Replay not found"}, 404
     return replays[replay_id]
 
+@app.get("/api/stats/live")
+@limiter.limit("120/minute")
+async def get_live_stats(request: Request):
+    """Get real-time statistics"""
+    return live_stats.get_stats()
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
+    
+    # Track session start
+    live_stats.session_started()
     
     # Check session limit
     if len(sessions) >= MAX_SESSIONS:
@@ -611,6 +624,9 @@ async def websocket_endpoint(websocket: WebSocket):
         import traceback
         traceback.print_exc()
     finally:
+        # Track session end
+        live_stats.session_ended()
+        
         if session_id in sessions:
             session = sessions[session_id]
             
