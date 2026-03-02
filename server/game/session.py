@@ -9,13 +9,14 @@ from metrics.game_metrics import GameMetrics
 from metrics.collector import MetricsCollector
 
 class GameSession:
-    def __init__(self, session_id, websocket, difficulty="simple", telemetry_mode="standard", update_rate=60, room_name=None):
+    def __init__(self, session_id, websocket, difficulty="simple", telemetry_mode="standard", update_rate=60, room_name=None, fuel_mode="standard"):
         self.session_id = session_id
         self.websocket = websocket
         self.difficulty = difficulty
         self.telemetry_mode = telemetry_mode  # "standard" or "advanced"
         self.update_rate = update_rate  # Hz: 60 for humans/bots, 2-10 for LLMs
         self.room_name = room_name
+        self.fuel_mode = fuel_mode  # "standard", "limited", "challenge"
         
         # Multiplayer support - players dictionary
         self.players = {}
@@ -23,7 +24,7 @@ class GameSession:
         # Backward compatibility - create default player
         default_player_id = "default"
         self.players[default_player_id] = {
-            'lander': Lander(),
+            'lander': Lander(fuel_mode=fuel_mode),
             'thrust': False,
             'rotate': None,
             'websocket': websocket,
@@ -417,6 +418,7 @@ class GameSession:
             game_id=self.session_id,
             player_id=self.user_id,
             difficulty=self.difficulty,
+            fuel_mode=self.fuel_mode,
             started_at=self.start_time,
             ended_at=time.time(),
             landed=self.lander.landed,
@@ -430,7 +432,7 @@ class GameSession:
             speed_at_end=speed,
             angle_at_end=angle,
             fuel_remaining=int(self.lander.fuel),
-            fuel_used=1000 - int(self.lander.fuel),
+            fuel_used=int(self.lander.max_fuel) - int(self.lander.fuel),
             thrust_frames=self._metrics['thrust_frames'],
             total_inputs=self.input_count,
             rotation_changes=self._metrics['rotation_changes']

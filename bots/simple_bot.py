@@ -10,9 +10,10 @@ import sys
 from datetime import datetime
 
 class SimpleBot:
-    def __init__(self, ws_url="ws://localhost:8000/ws", difficulty="simple", log_file=None):
+    def __init__(self, ws_url="ws://localhost:8000/ws", difficulty="simple", log_file=None, fuel_mode="standard"):
         self.ws_url = ws_url
         self.difficulty = difficulty
+        self.fuel_mode = fuel_mode
         self.ws = None
         self.log_file = log_file or f"bot_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jsonl"
         self.frame_count = 0
@@ -27,6 +28,7 @@ class SimpleBot:
         await self.ws.send(json.dumps({
             "type": "start",
             "difficulty": self.difficulty,
+            "fuel_mode": self.fuel_mode,
             "telemetry_mode": "advanced",
             "update_rate": 60,
             # Bot identification (optional, for future leaderboard)
@@ -34,7 +36,7 @@ class SimpleBot:
             "bot_version": "1.0",
             "bot_author": "Lunar Lander Team"
         }))
-        print(f"✓ Started game (difficulty: {self.difficulty}, mode: bot)")
+        print(f"✓ Started game (difficulty: {self.difficulty}, fuel: {self.fuel_mode}, mode: bot)")
         
     def decide_action(self, telemetry):
         """Rule-based decision making inspired by examples/simple_ai.py"""

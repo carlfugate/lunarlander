@@ -13,6 +13,7 @@ class GameMetrics:
     player_id: str
     difficulty: str
     started_at: float
+    fuel_mode: str = "standard"  # standard, limited, challenge, unlimited
     ended_at: Optional[float] = None
     
     # Core results

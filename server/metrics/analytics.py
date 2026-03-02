@@ -177,6 +177,7 @@ class AnalyticsEngine:
             'highest_score': max((g['score'] for g in landings), default=0),
             'fastest_landing': min((g['duration'] for g in landings), default=0) if landings else 0,
             'by_difficulty': self._stats_by_difficulty(games),
+            'by_fuel_mode': self._stats_by_fuel_mode(games),
             'calculated_at': time.time()
         }
         
@@ -273,6 +274,30 @@ class AnalyticsEngine:
         
         return result
     
+    def _stats_by_fuel_mode(self, games):
+        """Calculate per-fuel-mode statistics"""
+        by_fuel = defaultdict(lambda: {'games': 0, 'landings': 0, 'total_score': 0})
+        
+        for game in games:
+            fuel = game.get('fuel_mode', 'standard')
+            by_fuel[fuel]['games'] += 1
+            if game['landed']:
+                by_fuel[fuel]['landings'] += 1
+                by_fuel[fuel]['total_score'] += game['score']
+        
+        result = {}
+        for fuel, stats in by_fuel.items():
+            games_count = stats['games']
+            landings_count = stats['landings']
+            result[fuel] = {
+                'games': games_count,
+                'landings': landings_count,
+                'success_rate': landings_count / max(1, games_count),
+                'avg_score': stats['total_score'] / max(1, landings_count)
+            }
+        
+        return result
+    
     def _empty_stats(self, hours):
         """Return empty stats structure"""
         return {
@@ -289,5 +314,6 @@ class AnalyticsEngine:
             'highest_score': 0,
             'fastest_landing': 0,
             'by_difficulty': {},
+            'by_fuel_mode': {},
             'calculated_at': time.time()
         }

@@ -6,14 +6,23 @@ ROTATION_SPEED = 3.0  # radians/s
 INITIAL_FUEL = 1000.0
 FUEL_CONSUMPTION_RATE = 10.0  # units/s when thrusting
 
+# Fuel presets for different game modes
+FUEL_PRESETS = {
+    'unlimited': 1000.0,
+    'standard': 1000.0,
+    'limited': 300.0,    # ~30 seconds of thrust
+    'challenge': 150.0,  # ~15 seconds of thrust
+}
+
 class Lander:
-    def __init__(self, x=600, y=100):
+    def __init__(self, x=600, y=100, fuel_mode='standard'):
         self.x = float(x)
         self.y = float(y)
         self.vx = 0.0
         self.vy = 0.0
         self.rotation = 0.0  # radians, 0 = pointing up
-        self.fuel = INITIAL_FUEL
+        self.fuel = FUEL_PRESETS.get(fuel_mode, INITIAL_FUEL)
+        self.max_fuel = self.fuel  # Track max for percentage calculations
         self.crashed = False
         self.landed = False
         

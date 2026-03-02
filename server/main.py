@@ -357,6 +357,7 @@ async def websocket_endpoint(websocket: WebSocket):
             telemetry_mode = message.get("telemetry_mode", "standard")
             update_rate = message.get("update_rate", 60)
             player_name = message.get("player_name", "Player")
+            fuel_mode = message.get("fuel_mode", "standard")
             
             # Bot metadata (optional)
             bot_name = message.get("bot_name", None)
@@ -371,10 +372,14 @@ async def websocket_endpoint(websocket: WebSocket):
             if telemetry_mode not in ["standard", "advanced"]:
                 telemetry_mode = "standard"
             
+            # Validate fuel mode
+            if fuel_mode not in ["standard", "unlimited", "limited", "challenge"]:
+                fuel_mode = "standard"
+            
             # Validate update rate (2-60 Hz)
             update_rate = max(2, min(60, int(update_rate)))
             
-            session = GameSession(session_id, websocket, difficulty, telemetry_mode, update_rate)
+            session = GameSession(session_id, websocket, difficulty, telemetry_mode, update_rate, fuel_mode=fuel_mode)
             session.user_id = user_id
             session.bot_name = bot_name
             session.bot_version = bot_version
