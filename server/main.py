@@ -93,7 +93,7 @@ async def manual_cleanup():
 @limiter.limit("30/minute")
 async def list_active_games(request: Request):
     """List all active game sessions"""
-    # Cleanup stale sessions
+    from fastapi.responses import JSONResponse
     cleanup_stale_sessions()
     
     games = []
@@ -108,12 +108,13 @@ async def list_active_games(request: Request):
             "is_multiplayer": player_count > 1,
             "player_count": player_count
         })
-    return {"games": games}
+    return JSONResponse(content={"games": games}, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 @app.get("/rooms")
 @limiter.limit("30/minute")
 async def list_active_rooms(request: Request):
     """List all active rooms with at least 1 player"""
+    from fastapi.responses import JSONResponse
     cleanup_stale_sessions()
     
     rooms = []
@@ -129,7 +130,7 @@ async def list_active_rooms(request: Request):
                 "difficulty": session.difficulty,
                 "status": status
             })
-    return rooms
+    return JSONResponse(content=rooms, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 @app.websocket("/spectate/{session_id}")
 async def spectate_game(websocket: WebSocket, session_id: str):
@@ -207,6 +208,7 @@ async def spectate_game(websocket: WebSocket, session_id: str):
 @limiter.limit("30/minute")
 async def list_replays(request: Request):
     """List all available replays"""
+    from fastapi.responses import JSONResponse
     replay_list = []
     for replay_id, replay_data in replays.items():
         metadata = replay_data['metadata']
@@ -219,9 +221,8 @@ async def list_replays(request: Request):
             "crashed": metadata.get('crashed'),
             "timestamp": metadata.get('start_time')
         })
-    # Sort by timestamp, newest first
     replay_list.sort(key=lambda x: x['timestamp'], reverse=True)
-    return {"replays": replay_list}
+    return JSONResponse(content={"replays": replay_list}, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 @app.get("/replay/{replay_id}")
 @limiter.limit("60/minute")
