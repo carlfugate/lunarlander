@@ -10,18 +10,6 @@ class TestInputHandler:
         assert handler.use_keyboard is False
         assert hasattr(handler, 'term')
 
-    @pytest.mark.skip(reason="Keyboard library not used on macOS")
-    def test_init_with_keyboard(self):
-        pass
-
-    @pytest.mark.skip(reason="Implementation detail - covered by integration tests")
-    def test_init_without_keyboard(self):
-        pass
-
-    @pytest.mark.skip(reason="Implementation detail - covered by integration tests")
-    def test_init_keyboard_permission_error(self):
-        pass
-
     def test_start_blessed_thread(self):
         handler = InputHandler()
         handler.start()
@@ -29,19 +17,11 @@ class TestInputHandler:
         assert handler.thread is not None
         handler.stop()
 
-    @pytest.mark.skip(reason="Keyboard library not used on macOS")
-    def test_start_keyboard_mode(self):
-        pass
-
     def test_stop_blessed_thread(self):
         handler = InputHandler()
         handler.start()
         handler.stop()
         assert handler.running is False
-
-    @pytest.mark.skip(reason="Keyboard library not used on macOS")
-    def test_stop_keyboard_mode(self):
-        pass
 
     def test_get_actions(self):
         handler = InputHandler()
@@ -81,15 +61,3 @@ class TestInputHandler:
         handler.actions.add('rotate_left')
         handler._on_key_release('rotate_left')
         assert 'rotate_left' not in handler.actions
-
-    @pytest.mark.skip(reason="Implementation detail - covered by integration tests")
-    def test_handle_blessed_key_mapping(self):
-        pass
-
-    @pytest.mark.skip(reason="Implementation detail - covered by integration tests")
-    def test_handle_blessed_key_unknown(self):
-        pass
-
-    @pytest.mark.skip(reason="Implementation detail - covered by integration tests")
-    def test_setup_keyboard_hooks_permission_error(self):
-        pass
